@@ -108,20 +108,17 @@ task.spawn(function()
         if not hud then continue end
 
         local stationName, stationDistance = "Unknown", 1
-        pcall(function()
-            local sf
-            if hud:FindFirstChild("TrainHUD") then
-                sf = hud.TrainHUD:FindFirstChild("MainFrame2x")
-                   or hud.TrainHUD:FindFirstChild("MainFrame")
-                   or hud.TrainHUD:FindFirstChildOfClass("Frame")
+pcall(function()
+    if hud:FindFirstChild("TrainHUD") then
+        print("🔎 Exploring TrainHUD...")
+        for _, obj in pairs(hud.TrainHUD:GetDescendants()) do
+            if obj:IsA("TextLabel") or obj:IsA("TextBox") then
+                print("[UI] Name: " .. obj.Name .. " | Text: " .. obj.Text)
             end
-            if sf and sf:FindFirstChild("StationName") then
-                stationName = sf.StationName.Text or "Unknown"
-            end
-            if sf and sf:FindFirstChild("Distance") then
-                stationDistance = tonumber(sf.Distance.Text:match("[0-9.]+")) or 1
-            end
-        end)
+        end
+    end
+end)
+
 
         local trainClass = detectTrainClass()
         local config = classConfigs[trainClass] or classConfigs["Connect"]
