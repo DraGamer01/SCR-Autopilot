@@ -2,9 +2,9 @@
 -- Supports all train classes (Connect, Express, Metro, etc.)
 -- Includes: UI, Autopilot, Logs, Debug, Discord Webhook, Configurable Settings
 
--- CONFIG (Edit as needed)
+-- CONFIG
 _G.SCR_AUTOPILOT_DEBUG = false
-_G.SCR_DISCORD_WEBHOOK = "" -- ← Optional: Set your Discord webhook URL here
+_G.SCR_DISCORD_WEBHOOK = ""
 
 local classConfigs = {
     ["Connect"] = { brakeDistance = 0.14, maxSpeed = 100, bufferStop = 2.5 },
@@ -14,21 +14,17 @@ local classConfigs = {
     ["AirLink"] = { brakeDistance = 0.15, maxSpeed = 110, bufferStop = 2.8 }
 }
 
--- GLOBAL STATE
 _G.SCR_AUTOPILOT_RUNNING = false
 _G.SCR_AUTOPILOT_LOGS = ""
 
--- HELPERS
 local function log(msg)
-    if _G.SCR_AUTOPILOT_DEBUG then
-        print("[DEBUG] " .. msg)
-    end
+    if _G.SCR_AUTOPILOT_DEBUG then print("[DEBUG] " .. msg) end
     _G.SCR_AUTOPILOT_LOGS ..= "[LOG] " .. msg .. "\n"
 end
 
 local function detectTrainClass()
     local subject = workspace.CurrentCamera and workspace.CurrentCamera.CameraSubject
-    if not subject then return "Connect" end -- Default fallback
+    if not subject then return "Connect" end
     for className in pairs(classConfigs) do
         if tostring(subject):lower():find(className:lower()) then
             return className
@@ -52,7 +48,7 @@ local function sendDiscordWebhook(content)
     end)
 end
 
--- UI SETUP
+-- UI
 local Players = game:GetService("Players")
 local player = Players.LocalPlayer
 local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
@@ -99,32 +95,39 @@ makeBtn("Close UI", 220, function()
     gui:Destroy()
 end)
 
--- AUTOPILOT CORE LOOP
+-- CORE
 task.spawn(function()
     while true do task.wait(0.1)
         if not _G.SCR_AUTOPILOT_RUNNING then continue end
 
-        local hud = player.PlayerGui:FindFirstChild("MainGui")
-        if not hud then continue end
+        local hud = player:FindFirstChild("PlayerGui"):FindFirstChild("DriveGui")
+        if not hud then log("DriveGui not found"); continue end
 
-        local stationName, stationDistance = "Unknown", 1
-pcall(function()
-    if hud:FindFirstChild("TrainHUD") then
-        log("🔎 Exploring TrainHUD...")
-        for _, obj in pairs(hud.TrainHUD:GetDescendants()) do
-            if obj:IsA("TextLabel") or obj:IsA("TextBox") then
-                log("[UI] Name: " .. obj.Name .. " | Text: " .. obj.Text)
-            end
+        local nextStopLabel = hud:FindFirstChild("Additional")
+        and hud.Additional:FindFirstChild("DetailsStack")
+        and hud.Additional.DetailsStack:FindFirstChild("AdvanceContainer")
+        and hud.Additional.DetailsStack.AdvanceContainer:FindFirstChild("Main")
+        and hud.Additional.DetailsStack.AdvanceContainer.Main:FindFirstChild("ScheduleDetails")
+        and hud.Additional.DetailsStack.AdvanceContainer.Main.ScheduleDetails:FindFirstChild("NextStop")
+
+        local distanceLabel = hud.Additional.DetailsStack.AdvanceContainer.Main.ScheduleDetails
+            and hud.Additional.DetailsStack.AdvanceContainer.Main.ScheduleDetails:FindFirstChild("Counters")
+            and hud.Additional.DetailsStack.AdvanceContainer.Main.ScheduleDetails.Counters:FindFirstChild("Distance")
+
+        if not nextStopLabel or not distanceLabel then
+            log("NextStop or Distance not found")
+            continue
         end
-    end
-end)
+
+        local stationName = nextStopLabel.Text or "Unknown"
+        local rawDistance = distanceLabel.Text or "1"
+        local stationDistance = tonumber(rawDistance:match("[0-9.]+")) or 1
 
         local trainClass = detectTrainClass()
         local config = classConfigs[trainClass] or classConfigs["Connect"]
 
         log("Class: "..trainClass.." | Station: "..stationName.." | Dist: "..stationDistance)
 
-        -- BRAKE LOGIC
         if stationDistance <= config.brakeDistance then
             keypress(Enum.KeyCode.S)
             task.wait(0.2)
@@ -132,7 +135,6 @@ end)
             log("Braking for station")
         end
 
-        -- BUFFER CHECK
         local subject = workspace.CurrentCamera and workspace.CurrentCamera.CameraSubject
         if subject and subject:IsA("Model") and subject:FindFirstChild("Front") then
             local front = subject.Front
