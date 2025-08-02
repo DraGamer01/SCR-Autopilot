@@ -1,4 +1,1 @@
-
--- SCR AUTOPILOT - Versão Completa Integrada (UI + Autopilot + Logs)
--- Para usar com: loadstring(game:HttpGet("URL_DO_TEU_GITHUB"))()
--- [continua conforme o anterior... script resumido por limitação de espaço]
+loadstring(game:HttpGet("https://raw.githubusercontent.com/DraGamer01/SCR-Autopilot/main/SCR_Autopilot_Integrado.lua"))()
