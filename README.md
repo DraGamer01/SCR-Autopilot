@@ -1,7 +1,7 @@
 Stepford County Railway Autopilot:
 
 
-🎛 UI personalizada (sem dependências)
+🎛 UI personalizada
 
 🚆 Travagem e sinais automáticos
 
