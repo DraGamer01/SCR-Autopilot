@@ -1,12 +1,11 @@
 Stepford County Railway Autopilot
-Script atualizado para SCR oficial com:
 
-🎛 UI personalizada (sem dependências)
+  🎛 UI personalizada (sem dependências)
 
-🚆 Travagem e sinais automáticos
+  🚆 Travagem e sinais automáticos
 
-🧾 Logs exportáveis e debug ativável
+  🧾 Logs exportáveis e debug ativável
 
-🪪 Compatível com executores modernos
+  🪪 Compatível com executores modernos
 
-📤 Suporte opcional a Webhook Discord
+  📤 Suporte opcional a Webhook Discord
