@@ -1,11 +1,55 @@
+
 -- SCR Autopilot Integrated - DraGamer01 Edition (Final Version)
 -- Supports all train classes (Connect, Express, Metro, etc.)
 -- Includes: UI, Autopilot, Logs, Debug, Discord Webhook, Configurable Settings
 
 -- CONFIG (Edit as needed)
 _G.SCR_AUTOPILOT_DEBUG = false
-_G.SCR_DISCORD_WEBHOOK = "" -- ← Optional: Set your Discord webhook URL here
+_G.SCR_DISCORD_WEBHOOK = "" -- Optional: Set your Discord webhook URL here
 
+local classConfigs = {
+    ["Connect"] = { brakeDistance = 0.14, maxSpeed = 100, bufferStop = 2.5 },
+    ["Express"] = { brakeDistance = 0.18, maxSpeed = 125, bufferStop = 3.5 },
+    ["Metro"] = { brakeDistance = 0.10, maxSpeed = 75,  bufferStop = 2.0 },
+    ["Waterline"] = { brakeDistance = 0.12, maxSpeed = 90,  bufferStop = 2.4 },
+    ["AirLink"] = { brakeDistance = 0.15, maxSpeed = 110, bufferStop = 2.8 }
+}
+
+_G.SCR_AUTOPILOT_RUNNING = false
+_G.SCR_AUTOPILOT_LOGS = ""
+
+local function log(msg)
+    if _G.SCR_AUTOPILOT_DEBUG then print("[DEBUG] " .. msg) end
+    _G.SCR_AUTOPILOT_LOGS ..= "[LOG] " .. msg .. "\n"
+end
+
+local function detectTrainClass()
+    local subject = workspace.CurrentCamera and workspace.CurrentCamera.CameraSubject
+    if not subject then return "Connect" end
+    for className in pairs(classConfigs) do
+        if tostring(subject):lower():find(className:lower()) then
+            return className
+        end
+    end
+    return "Connect"
+end
+
+local function sendDiscordWebhook(content)
+    local url = _G.SCR_DISCORD_WEBHOOK
+    if url == "" then return end
+    local http = (syn and syn.request) or (http and http.request) or (http_request)
+    if not http then return end
+    pcall(function()
+        http({
+            Url = url,
+            Method = "POST",
+            Headers = {["Content-Type"] = "application/json"},
+            Body = game:GetService("HttpService"):JSONEncode({ content = content })
+        })
+    end)
+end
+
+-- UI SETUP
 local Players = game:GetService("Players")
 local player = Players.LocalPlayer
 local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
@@ -31,29 +75,6 @@ local function makeBtn(text, pos, callback)
     btn.MouseButton1Click:Connect(callback)
 end
 
-_G.SCR_AUTOPILOT_RUNNING = false
-_G.SCR_AUTOPILOT_LOGS = ""
-
-local function log(msg)
-    if _G.SCR_AUTOPILOT_DEBUG then print("[DEBUG] " .. msg) end
-    _G.SCR_AUTOPILOT_LOGS ..= "[LOG] " .. msg .. "\n"
-end
-
-local function sendDiscordWebhook(content)
-    local url = _G.SCR_DISCORD_WEBHOOK
-    if url == "" then return end
-    local http = (syn and syn.request) or (http and http.request) or (http_request)
-    if not http then return end
-    pcall(function()
-        http({
-            Url = url,
-            Method = "POST",
-            Headers = {["Content-Type"] = "application/json"},
-            Body = game:GetService("HttpService"):JSONEncode({ content = content })
-        })
-    end)
-end
-
 makeBtn("Toggle Autopilot", 20, function()
     _G.SCR_AUTOPILOT_RUNNING = not _G.SCR_AUTOPILOT_RUNNING
     log("Autopilot " .. (_G.SCR_AUTOPILOT_RUNNING and "Activated" or "Deactivated"))
@@ -75,30 +96,6 @@ makeBtn("Close UI", 220, function()
     gui:Destroy()
 end)
 
-local function detectTrainClassFromMenu()
-    local menu = player.PlayerGui:FindFirstChild("MainGui")
-    if not menu then return "Connect" end
-    local textLabels = menu:GetDescendants()
-    for _, obj in ipairs(textLabels) do
-        if obj:IsA("TextLabel") or obj:IsA("TextButton") then
-            local txt = obj.Text:lower()
-            if txt:find("metro") then return "Metro" end
-            if txt:find("express") then return "Express" end
-            if txt:find("waterline") then return "Waterline" end
-            if txt:find("airlink") then return "AirLink" end
-        end
-    end
-    return "Connect"
-end
-
-local classConfigs = {
-    ["Connect"] = { brakeDistance = 0.14, maxSpeed = 100, bufferStop = 2.5 },
-    ["Express"] = { brakeDistance = 0.18, maxSpeed = 125, bufferStop = 3.5 },
-    ["Metro"] = { brakeDistance = 0.10, maxSpeed = 75,  bufferStop = 2.0 },
-    ["Waterline"] = { brakeDistance = 0.12, maxSpeed = 90,  bufferStop = 2.4 },
-    ["AirLink"] = { brakeDistance = 0.15, maxSpeed = 110, bufferStop = 2.8 }
-}
-
 -- AUTOPILOT CORE LOOP
 task.spawn(function()
     while true do task.wait(0.1)
@@ -107,31 +104,46 @@ task.spawn(function()
         local hud = player.PlayerGui:FindFirstChild("DriveGui")
         if not hud then continue end
 
-        local stationName = "Unknown"
-        local stationDistance = 999
-        local signalDistance = 999
-
+        local stationName, stationDistance = "Unknown", 1
         pcall(function()
-            stationName = hud.Additional.DetailsStack.AdvanceContainer.Main.ScheduleDetails.NextStop.Text
-            stationDistance = tonumber(hud.Additional.DetailsStack.AdvanceContainer.Main.ScheduleDetails.Counters.Distance.Text:match("[%d%.]+")) or 999
-            signalDistance = tonumber(hud.Additional.DetailsStack.AdvanceContainer.Signal.Distance.Text:match("[%d%.]+")) or 999
+            local schedule = hud:FindFirstChild("Additional")
+            if schedule then
+                local info = schedule:FindFirstChild("DetailsStack")
+                if info then
+                    local adv = info:FindFirstChild("AdvanceContainer")
+                    if adv and adv:FindFirstChild("Main") then
+                        local nextStop = adv.Main:FindFirstChild("ScheduleDetails") and adv.Main.ScheduleDetails:FindFirstChild("NextStop")
+                        local dist = adv.Main.ScheduleDetails:FindFirstChild("Counters") and adv.Main.ScheduleDetails.Counters:FindFirstChild("Distance")
+                        if nextStop then stationName = nextStop.Text end
+                        if dist then stationDistance = tonumber(dist.Text:match("[0-9.]+")) or 1 end
+                    end
+                end
+            end
         end)
 
-        local trainClass = detectTrainClassFromMenu()
+        local trainClass = detectTrainClass()
         local config = classConfigs[trainClass] or classConfigs["Connect"]
 
-        log("Class: "..trainClass.." | Station: "..stationName.." | Dist: "..stationDistance.." | Signal: "..signalDistance)
+        log("Class: "..trainClass.." | Station: "..stationName.." | Dist: "..stationDistance)
 
-        if stationDistance <= config.brakeDistance or signalDistance <= 0.1 then
+        if stationDistance <= config.brakeDistance then
             keypress(Enum.KeyCode.S)
-            task.wait(0.3)
+            task.wait(0.2)
             keyrelease(Enum.KeyCode.S)
-            log("Braking")
-        elseif stationDistance > config.brakeDistance and signalDistance > 0.3 then
-            keypress(Enum.KeyCode.W)
-            task.wait(0.3)
-            keyrelease(Enum.KeyCode.W)
-            log("Accelerating")
+            log("Braking for station")
+        end
+
+        local subject = workspace.CurrentCamera and workspace.CurrentCamera.CameraSubject
+        if subject and subject:IsA("Model") and subject:FindFirstChild("Front") then
+            local front = subject.Front
+            for _, obj in pairs(workspace:GetPartBoundsInBox(front.CFrame, front.Size)) do
+                if obj:IsA("Part") and obj.Name:lower():find("buffer") then
+                    keypress(Enum.KeyCode.S)
+                    task.wait(0.3)
+                    keyrelease(Enum.KeyCode.S)
+                    log("Braking for buffer")
+                end
+            end
         end
     end
 end)
