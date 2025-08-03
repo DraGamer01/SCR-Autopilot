@@ -1,0 +1,8 @@
+{
+  "webhook_url": "https://your-discord-webhook-url.com",
+  "autostart": true,
+  "update_rate": 0.5,
+  "max_speed_mph": 100,
+  "safe_stop_margin": 0.02,
+  "classes_supported": ["Connect", "Express", "Metro", "AirLink", "Waterline"]
+}
