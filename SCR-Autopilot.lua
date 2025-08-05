@@ -1,12 +1,12 @@
--- Carrega a biblioteca Rayfield UI
+-- Carrega a biblioteca Rayfield
 local Rayfield = loadstring(game:HttpGet('https://raw.githubusercontent.com/shlexware/Rayfield/main/source'))()
-local Window = Rayfield:CreateWindow({Name = "SCR Autopilot", LoadingTitle = "Autopilot", LoadingSubtitle = "by xAI", ConfigurationSaving = {Enabled = true, FolderName = "SCR_Autopilot", FileName = "Config"}})
+local Window = Rayfield:CreateWindow({Name = "SCR Autopilot", LoadingTitle = "Autopilot", LoadingSubtitle = "by DraGamer01", ConfigurationSaving = {Enabled = true, FolderName = "SCR_Autopilot", FileName = "Config"}})
 
--- Configurações iniciais
+-- Configurações
 local trainMaxSpeed, run, braking, redSignal, yellow = 100, false, false, false, false
-local brakeTime = 1.75 -- Ajustável para física da V2.2
+local brakeTime = 1.75 -- Ajustável para V2.2
 
--- Função para obter HUD e validar
+-- Função para obter HUD
 local function getHUD()
     local trainHUD = game.Players.LocalPlayer.PlayerGui:FindFirstChild("MainGui") and game.Players.LocalPlayer.PlayerGui.MainGui:FindFirstChild("TrainHUD")
     if not trainHUD then return end
@@ -15,7 +15,7 @@ local function getHUD()
     return trainHUD, mainFrame:FindFirstChild("NextSignalFrame"), mainFrame:FindFirstChild("StatusFrame"), mainFrame:FindFirstChild("DestinationFrame")
 end
 
--- Funções de ação do trem (substituir pelos RemoteEvents reais)
+-- Funções de ação (substituir pelos RemoteEvents reais)
 local function accelerate() local h = getHUD() if h then local e = h[1]:FindFirstChild("AccelerateEvent") if e then e:FireServer(true) else warn("AccelerateEvent não encontrado!") end end end
 local function brake() local h = getHUD() if h then local e = h[1]:FindFirstChild("BrakeEvent") if e then e:FireServer(true) wait(brakeTime) e:FireServer(false) else warn("BrakeEvent não encontrado!") end end end
 local function openDoors() local h = getHUD() if h then local e = h[1]:FindFirstChild("DoorEvent") if e then e:FireServer() else warn("DoorEvent não encontrado!") end end end
