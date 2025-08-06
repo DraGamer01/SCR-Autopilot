@@ -1,7 +1,11 @@
 -- SCP: The Red Lake Hub
--- Script atualizado com correções de erros e logs otimizados
+-- Script atualizado com correção de erro na inicialização e logs otimizados
 
-local _R = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+local success, Rayfield = pcall(function() return loadstring(game:HttpGet('https://sirius.menu/rayfield'))() end)
+if not success then
+    warn("Falha ao carregar Rayfield: " .. tostring(Rayfield))
+    return
+end
 local _P = game:GetService("Players")
 local _L = _P.LocalPlayer
 local _RS = game:GetService("RunService")
@@ -32,14 +36,12 @@ local _fc
 local _ac
 local _hc = {}
 
--- Logs para memória e tentativa de arquivo
-local _logFile = "C:\\Users\\matia\\AppData\\Roaming\\Swift\\Workspace\\SCPHubLogs.txt"
+-- Logs para memória
 local _logs = ""
 local function _pl(m)
     local _t = os.date("%H:%M:%S") .. " - " .. tostring(m)
     _logs = _logs .. _t .. "\n"
     getgenv().SwiftLogs = _logs -- Para acesso na workspace
-    pcall(function() writefile(_logFile, _logs) end) -- Tenta salvar, mas ignora erros
     print(_t)
 end
 local _oldPrint = print
@@ -413,7 +415,4 @@ _dc()
 local _mt = _R:CreateTab("Principal", 4483362458)
 _mt:CreateToggle({ Name = "Noclip", CurrentValue = false, Callback = _tn })
 _mt:CreateToggle({ Name = "Fly", CurrentValue = false, Callback = _tf })
-_mt:CreateToggle({ Name = "Aimbot", CurrentValue = false, Callback = _ta })
-_mt:CreateToggle({ Name = "God Mode", CurrentValue = false, Callback = _tg })
-_mt:CreateToggle({ Name = "Teleporte por Clique", CurrentValue = false, Callback = _tt })
-_mt:CreateToggle({ Name = "Alterar Velocidade de Caminhada", CurrentValue = false, Callback = function(v) _mw = v; if _L.Character and _L.Character:WaitForChild("Humanoid", 1) then _L.Character.Humanoid.WalkSpeed = _mw and _ws or _dws end; _R:Notify
+_mt:CreateToggle({
