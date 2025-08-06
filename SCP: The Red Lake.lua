@@ -1,353 +1,234 @@
--- SCP: The Red Lake Hack Script for Swift Executor
+-- SCP: The Red Lake Hub
+-- Script atualizado com UI aprimorada, aimbot, teleporte e aba de configurações
+
+local Rayfield = loadstring(game:HttpGet('https://raw.githubusercontent.com/Rayfield/Rayfield/main/Loader.lua'))()
 local Players = game:GetService("Players")
-local UserInputService = game:GetService("UserInputService")
+local LocalPlayer = Players.LocalPlayer
 local RunService = game:GetService("RunService")
-local Player = Players.LocalPlayer
-local Character = Player.Character or Player.CharacterAdded:Wait()
-local Humanoid = Character:WaitForChild("Humanoid")
-local RootPart = Character:WaitForChild("HumanoidRootPart")
-local Camera = workspace.CurrentCamera
+local UserInputService = game:GetService("UserInputService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Workspace = game:GetService("Workspace")
+local Camera = Workspace.CurrentCamera
 
--- GUI Setup (Local ScreenGui)
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "HackPanel_" .. tostring(math.random(1000, 9999))
-ScreenGui.Parent = Player.PlayerGui
+-- UI Setup
+local Window = Rayfield:CreateWindow({
+    Name = "SCP: The Red Lake Hub",
+    LoadingTitle = "Carregando SCP Hub...",
+    LoadingSubtitle = "por DraGamer01 (Atualizado)",
+    ConfigurationSaving = { Enabled = true, FolderName = "SCPRedLakeHub", FileName = "Config" }
+})
 
-local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 200, 0, 500)
-MainFrame.Position = UDim2.new(0, 10, 0, 10)
-MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-MainFrame.BorderSizePixel = 0
-MainFrame.Parent = ScreenGui
+-- Variáveis
+local isNoclip = false
+local isFlying = false
+local flySpeed = 50
+local walkSpeed = 16
+local aimbotEnabled = false
+local aimbotRange = 500
+local teleportEnabled = false
+local godModeEnabled = false
+local flyConnection
+local aimbotConnection
 
-local ToggleAimbot = Instance.new("TextButton")
-ToggleAimbot.Size = UDim2.new(0, 180, 0, 40)
-ToggleAimbot.Position = UDim2.new(0, 10, 0, 10)
-ToggleAimbot.Text = "Toggle Aimbot"
-ToggleAimbot.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-ToggleAimbot.Parent = MainFrame
+-- Função Noclip
+local function toggleNoclip()
+    isNoclip = not isNoclip
+    if isNoclip then
+        RunService:BindToRenderStep("Noclip", Enum.RenderPriority.Character.Value, function()
+            if LocalPlayer.Character then
+                for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
+                    if part:IsA("BasePart") then
+                        part.CanCollide = false
+                    end
+                end
+            end
+        end)
+    else
+        RunService:UnbindFromRenderStep("Noclip")
+    end
+    Rayfield:Notify({ Title = "Noclip", Content = isNoclip and "Noclip Ativado" or "Noclip Desativado", Duration = 3 })
+end
 
-local ToggleHitbox = Instance.new("TextButton")
-ToggleHitbox.Size = UDim2.new(0, 180, 0, 40)
-ToggleHitbox.Position = UDim2.new(0, 10, 0, 60)
-ToggleHitbox.Text = "Toggle Dynamic Hitbox"
-ToggleHitbox.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-ToggleHitbox.Parent = MainFrame
+-- Função Fly
+local function toggleFly()
+    isFlying = not isFlying
+    if isFlying then
+        local bodyVelocity = Instance.new("BodyVelocity")
+        bodyVelocity.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+        bodyVelocity.Parent = LocalPlayer.Character.HumanoidRootPart
+        flyConnection = RunService.Heartbeat:Connect(function()
+            if LocalPlayer.Character and LocalPlayer.Character.HumanoidRootPart then
+                local moveDirection = Vector3.new(0, 0, 0)
+                if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDirection += Camera.CFrame.LookVector end
+                if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDirection -= Camera.CFrame.LookVector end
+                if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveDirection -= Camera.CFrame.RightVector end
+                if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDirection += Camera.CFrame.RightVector end
+                if UserInputService:IsKeyDown(Enum.KeyCode.Space) then moveDirection += Vector3.new(0, 1, 0) end
+                if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then moveDirection -= Vector3.new(0, 1, 0) end
+                bodyVelocity.Velocity = moveDirection * flySpeed
+            end
+        end)
+    else
+        if flyConnection then flyConnection:Disconnect() end
+        if LocalPlayer.Character and LocalPlayer.Character.HumanoidRootPart:FindFirstChild("BodyVelocity") then
+            LocalPlayer.Character.HumanoidRootPart.BodyVelocity:Destroy()
+        end
+    end
+    Rayfield:Notify({ Title = "Fly", Content = isFlying and "Fly Ativado" or "Fly Desativado", Duration = 3 })
+end
 
-local HitboxScaleSlider = Instance.new("TextButton")
-HitboxScaleSlider.Size = UDim2.new(0, 180, 0, 40)
-HitboxScaleSlider.Position = UDim2.new(0, 10, 0, 110)
-HitboxScaleSlider.Text = "Hitbox Scale: 1.0 (Click to Adjust)"
-HitboxScaleSlider.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-HitboxScaleSlider.Parent = MainFrame
+-- Função Walkspeed
+local function setWalkspeed(speed)
+    walkSpeed = speed
+    if LocalPlayer.Character and LocalPlayer.Character.Humanoid then
+        LocalPlayer.Character.Humanoid.WalkSpeed = speed
+    end
+    LocalPlayer.CharacterAdded:Connect(function(character)
+        character:WaitForChild("Humanoid").WalkSpeed = walkSpeed
+    end)
+    Rayfield:Notify({ Title = "Walkspeed", Content = "Velocidade definida para " .. speed, Duration = 3 })
+end
 
-local ToggleGodMode = Instance.new("TextButton")
-ToggleGodMode.Size = UDim2.new(0, 180, 0, 40)
-ToggleGodMode.Position = UDim2.new(0, 10, 0, 160)
-ToggleGodMode.Text = "Toggle God Mode"
-ToggleGodMode.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-ToggleGodMode.Parent = MainFrame
+-- Função Aimbot
+local function getClosestEnemy()
+    local closestEnemy = nil
+    local closestDistance = math.huge
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character and player.Character.Humanoid and player.Character.Humanoid.Health > 0 then
+            local distance = (player.Character.HumanoidRootPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
+            if distance < closestDistance and distance < aimbotRange then
+                closestEnemy = player.Character
+                closestDistance = distance
+            end
+        end
+    end
+    return closestEnemy
+end
 
-local ToggleGeneratorImmortal = Instance.new("TextButton")
-ToggleGeneratorImmortal.Size = UDim2.new(0, 180, 0, 40)
-ToggleGeneratorImmortal.Position = UDim2.new(0, 10, 0, 210)
-ToggleGeneratorImmortal.Text = "Toggle Generator Immortal"
-ToggleGeneratorImmortal.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-ToggleGeneratorImmortal.Parent = MainFrame
+local function toggleAimbot()
+    aimbotEnabled = not aimbotEnabled
+    if aimbotEnabled then
+        aimbotConnection = RunService.RenderStepped:Connect(function()
+            if LocalPlayer.Character and LocalPlayer.Character.HumanoidRootPart then
+                local enemy = getClosestEnemy()
+                if enemy and enemy.HumanoidRootPart then
+                    Camera.CFrame = CFrame.new(Camera.CFrame.Position, enemy.HumanoidRootPart.Position)
+                end
+            end
+        end)
+    else
+        if aimbotConnection then aimbotConnection:Disconnect() end
+    end
+    Rayfield:Notify({ Title = "Aimbot", Content = aimbotEnabled and "Aimbot Ativado" or "Aimbot Desativado", Duration = 3 })
+end
 
-local ToggleNoclip = Instance.new("TextButton")
-ToggleNoclip.Size = UDim2.new(0, 180, 0, 40)
-ToggleNoclip.Position = UDim2.new(0, 10, 0, 260)
-ToggleNoclip.Text = "Toggle Noclip"
-ToggleNoclip.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-ToggleNoclip.Parent = MainFrame
+-- Função God Mode
+local function toggleGodMode()
+    godModeEnabled = not godModeEnabled
+    if godModeEnabled then
+        if LocalPlayer.Character and LocalPlayer.Character.Humanoid then
+            LocalPlayer.Character.Humanoid.MaxHealth = math.huge
+            LocalPlayer.Character.Humanoid.Health = math.huge
+        end
+        LocalPlayer.CharacterAdded:Connect(function(character)
+            character:WaitForChild("Humanoid").MaxHealth = math.huge
+            character:WaitForChild("Humanoid").Health = math.huge
+        end)
+    else
+        if LocalPlayer.Character and LocalPlayer.Character.Humanoid then
+            LocalPlayer.Character.Humanoid.MaxHealth = 100
+            LocalPlayer.Character.Humanoid.Health = 100
+        end
+    end
+    Rayfield:Notify({ Title = "God Mode", Content = godModeEnabled and "God Mode Ativado" or "God Mode Desativado", Duration = 3 })
+end
 
-local ToggleFly = Instance.new("TextButton")
-ToggleFly.Size = UDim2.new(0, 180, 0, 40)
-ToggleFly.Position = UDim2.new(0, 10, 0, 310)
-ToggleFly.Text = "Toggle Fly Mode"
-ToggleFly.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-ToggleFly.Parent = MainFrame
-
-local SpeedSlider = Instance.new("TextButton")
-SpeedSlider.Size = UDim2.new(0, 180, 0, 40)
-SpeedSlider.Position = UDim2.new(0, 10, 0, 360)
-SpeedSlider.Text = "Speed: 16 (Click to Adjust)"
-SpeedSlider.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-SpeedSlider.Parent = MainFrame
-
-local ToggleFastFire = Instance.new("TextButton")
-ToggleFastFire.Size = UDim2.new(0, 180, 0, 40)
-ToggleFastFire.Position = UDim2.new(0, 10, 0, 410)
-ToggleFastFire.Text = "Toggle Fast Fire"
-ToggleFastFire.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-ToggleFastFire.Parent = MainFrame
-
-local FireRateSlider = Instance.new("TextButton")
-FireRateSlider.Size = UDim2.new(0, 180, 0, 40)
-FireRateSlider.Position = UDim2.new(0, 10, 0, 460)
-FireRateSlider.Text = "Fire Rate: 1.0x (Click to Adjust)"
-FireRateSlider.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-FireRateSlider.Parent = MainFrame
-
--- Variables
-local AimbotEnabled = false
-local AimbotFOV = 100
-local AimbotSmoothness = 0.1
-local TargetPart = "Head"
-local DynamicHitboxEnabled = false
-local HitboxScale = 1.0
-local NoclipEnabled = false
-local FlyEnabled = false
-local FlySpeed = 50
-local SpeedValue = 16
-local GodModeEnabled = false
-local GeneratorImmortalEnabled = false
-local FastFireEnabled = false
-local FireRateMultiplier = 1.0 -- 1.0x = normal speed, <1.0 = faster
-local DamageMultiplier = 1.0
-
-local BodyVelocity = Instance.new("BodyVelocity")
-BodyVelocity.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-BodyVelocity.Velocity = Vector3.new(0, 0, 0)
-
--- God Mode
-local function EnableGodMode()
-    if GodModeEnabled then
-        Humanoid:GetPropertyChangedSignal("Health"):Connect(function()
-            if Humanoid.Health < Humanoid.MaxHealth then
-                Humanoid.Health = math.min(Humanoid.MaxHealth, Humanoid.Health + 1000)
+-- Função Teleport
+local function toggleTeleport()
+    teleportEnabled = not teleportEnabled
+    if teleportEnabled then
+        UserInputService.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 and teleportEnabled then
+                local mouse = LocalPlayer:GetMouse()
+                local hit = mouse.Hit
+                if LocalPlayer.Character and LocalPlayer.Character.HumanoidRootPart then
+                    LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(hit.Position + Vector3.new(0, 3, 0))
+                end
             end
         end)
     end
+    Rayfield:Notify({ Title = "Teleporte", Content = teleportEnabled and "Teleporte por Clique Ativado" or "Teleporte por Clique Desativado", Duration = 3 })
 end
 
--- Generator Immortal
-local function EnableGeneratorImmortal()
-    local generator = workspace:FindFirstChild("Generator")
-    if GeneratorImmortalEnabled and generator then
-        if generator:FindFirstChild("Humanoid") then
-            generator.Humanoid:GetPropertyChangedSignal("Health"):Connect(function()
-                if generator.Humanoid.Health < generator.Humanoid.MaxHealth then
-                    generator.Humanoid.Health = generator.Humanoid.MaxHealth
-                end
-            end)
-        elseif generator:FindFirstChild("Health") then
-            spawn(function()
-                while GeneratorImmortalEnabled and generator.Parent do
-                    if generator.Health.Value < generator.Health.MaxValue then
-                        generator.Health.Value = generator.Health.MaxValue
-                    end
-                    wait(0.1)
-                end
-            end)
-        end
+-- Aba Principal
+local MainTab = Window:CreateTab("Principal", 4483362458)
+MainTab:CreateToggle({
+    Name = "Noclip",
+    CurrentValue = false,
+    Callback = toggleNoclip
+})
+MainTab:CreateToggle({
+    Name = "Fly",
+    CurrentValue = false,
+    Callback = toggleFly
+})
+MainTab:CreateToggle({
+    Name = "Aimbot",
+    CurrentValue = false,
+    Callback = toggleAimbot
+})
+MainTab:CreateToggle({
+    Name = "God Mode",
+    CurrentValue = false,
+    Callback = toggleGodMode
+})
+MainTab:CreateToggle({
+    Name = "Teleporte por Clique",
+    CurrentValue = false,
+    Callback = toggleTeleport
+})
+
+-- Aba Configurações
+local ConfigTab = Window:CreateTab("Configurações", 4483362458)
+ConfigTab:CreateSlider({
+    Name = "Velocidade de Voo",
+    Range = {10, 200},
+    Increment = 1,
+    CurrentValue = 50,
+    Callback = function(value)
+        flySpeed = value
+        Rayfield:Notify({ Title = "Configuração", Content = "Velocidade de Voo definida para " .. value, Duration = 3 })
     end
-end
-
--- Aimbot with Dynamic Hitbox
-local function GetClosestEnemy()
-    local ClosestEnemy = nil
-    local ClosestDistance = AimbotFOV
-    for _, v in pairs(workspace:GetChildren()) do
-        if v:IsA("Model") and v ~= Character and v:FindFirstChild("Humanoid") and v:FindFirstChild("Head") then
-            local EnemyHead = v:FindFirstChild("Head")
-            local HeadPos = EnemyHead.Position
-            local HeadSize = EnemyHead.Size.X
-            local HumanoidRootPart = v:FindFirstChild("HumanoidRootPart")
-            local TargetPos = HumanoidRootPart and HumanoidRootPart.Position or HeadPos
-
-            if DynamicHitboxEnabled then
-                local DynamicRadius = HeadSize * HitboxScale * (HumanoidRootPart and 2 or 1)
-                local MousePos = UserInputService:GetMouseLocation()
-                local ScreenPoint, OnScreen = Camera:WorldToScreenPoint(TargetPos)
-                local Distance = (Vector2.new(ScreenPoint.X, ScreenPoint.Y) - Vector2.new(MousePos.X, MousePos.Y)).Magnitude
-                if OnScreen and Distance < ClosestDistance + DynamicRadius and v:FindFirstChild("Humanoid").Health > 0 then
-                    ClosestDistance = Distance
-                    ClosestEnemy = v
-                end
-            else
-                local HeadPos, OnScreen = Camera:WorldToScreenPoint(TargetPos)
-                local Distance = (Vector2.new(HeadPos.X, HeadPos.Y) - Vector2.new(UserInputService:GetMouseLocation().X, UserInputService:GetMouseLocation().Y)).Magnitude
-                if OnScreen and Distance < ClosestDistance and v:FindFirstChild("Humanoid").Health > 0 then
-                    ClosestDistance = Distance
-                    ClosestEnemy = v
-                end
-            end
-        end
+})
+ConfigTab:CreateSlider({
+    Name = "Velocidade de Caminhada",
+    Range = {16, 200},
+    Increment = 1,
+    CurrentValue = 16,
+    Callback = function(value)
+        setWalkspeed(value)
     end
-    return ClosestEnemy
-end
-
-local function Aimbot()
-    if AimbotEnabled then
-        local Enemy = GetClosestEnemy()
-        if Enemy then
-            local TargetPos = Enemy:FindFirstChild(TargetPart).Position
-            Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, TargetPos), AimbotSmoothness)
-        end
+})
+ConfigTab:CreateSlider({
+    Name = "Alcance do Aimbot",
+    Range = {100, 1000},
+    Increment = 10,
+    CurrentValue = 500,
+    Callback = function(value)
+        aimbotRange = value
+        Rayfield:Notify({ Title = "Configuração", Content = "Alcance do Aimbot definido para " .. value, Duration = 3 })
     end
-end
+})
 
--- Noclip
-local function NoclipLoop()
-    if NoclipEnabled then
-        for _, v in pairs(Character:GetDescendants()) do
-            if v:IsA("BasePart") then
-                v.CanCollide = false
-            end
-        end
-    else
-        for _, v in pairs(Character:GetDescendants()) do
-            if v:IsA("BasePart") then
-                v.CanCollide = true
-            end
-        end
-    end
-end
-
--- Fly
-local function FlyLoop()
-    if FlyEnabled then
-        BodyVelocity.Parent = RootPart
-        local MoveDirection = Vector3.new(0, 0, 0)
-        if UserInputService:IsKeyDown(Enum.KeyCode.W) then MoveDirection = MoveDirection + Camera.CFrame.LookVector end
-        if UserInputService:IsKeyDown(Enum.KeyCode.S) then MoveDirection = MoveDirection - Camera.CFrame.LookVector end
-        if UserInputService:IsKeyDown(Enum.KeyCode.A) then MoveDirection = MoveDirection - Camera.CFrame.RightVector end
-        if UserInputService:IsKeyDown(Enum.KeyCode.D) then MoveDirection = MoveDirection + Camera.CFrame.RightVector end
-        if UserInputService:IsKeyDown(Enum.KeyCode.Space) then MoveDirection = MoveDirection + Vector3.new(0, 1, 0) end
-        if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then MoveDirection = MoveDirection - Vector3.new(0, 1, 0) end
-        BodyVelocity.Velocity = MoveDirection * FlySpeed
-    else
-        BodyVelocity.Parent = nil
-    end
-end
-
--- Weapon Modifications
-local function ModifyWeapons()
-    if FastFireEnabled then
-        for _, tool in pairs(Player.Backpack:GetChildren()) do
-            if tool:IsA("Tool") then
-                local script = tool:FindFirstChildWhichIsA("Script") or tool:FindFirstChildWhichIsA("LocalScript")
-                if script then
-                    for _, conn in pairs(getconnections(script.Activated)) do
-                        conn:Disable()
-                    end
-                    spawn(function()
-                        while FastFireEnabled and tool.Parent do
-                            if UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) then
-                                script.Activated:Fire()
-                                wait(FireRateMultiplier * 0.1) -- Adjustable fire rate
-                            end
-                            wait(0.01)
-                        end
-                    end)
-                end
-                -- Infinite Ammo
-                local ammo = tool:FindFirstChild("Ammo") or tool:FindFirstChild(" ammunition")
-                if ammo then
-                    ammo.Value = math.huge
-                    ammo:GetPropertyChangedSignal("Value"):Connect(function()
-                        ammo.Value = math.huge
-                    end)
-                end
-                -- Damage Modifier
-                local damage = tool:FindFirstChild("Damage")
-                if damage then
-                    damage.Value = damage.Value * DamageMultiplier
-                    damage:GetPropertyChangedSignal("Value"):Connect(function()
-                        damage.Value = damage.Value * DamageMultiplier
-                    end)
-                end
-            end
-        end
-        Player.Character.ChildAdded:Connect(function(child)
-            if child:IsA("Tool") then
-                ModifyWeapons()
-            end
-        end)
-    end
-end
-
--- GUI Events
-ToggleAimbot.MouseButton1Click:Connect(function()
-    AimbotEnabled = not AimbotEnabled
-    ToggleAimbot.Text = "Toggle Aimbot: " .. (AimbotEnabled and "ON" or "OFF")
+-- Lidar com Reset do Personagem
+LocalPlayer.CharacterAdded:Connect(function(character)
+    if isNoclip then toggleNoclip() toggleNoclip() end
+    if isFlying then toggleFly() toggleFly() end
+    if godModeEnabled then toggleGodMode() toggleGodMode() end
 end)
 
-ToggleHitbox.MouseButton1Click:Connect(function()
-    DynamicHitboxEnabled = not DynamicHitboxEnabled
-    ToggleHitbox.Text = "Toggle Dynamic Hitbox: " .. (DynamicHitboxEnabled and "ON" or "OFF")
-end)
+-- Anti-Kick
+hookfunction(LocalPlayer.Kick, function() warn("Tentativa de kick bloqueada") end)
 
-HitboxScaleSlider.MouseButton1Click:Connect(function()
-    HitboxScale = math.clamp(HitboxScale + 0.5, 1.0, 5.0)
-    HitboxScaleSlider.Text = "Hitbox Scale: " .. string.format("%.1f", HitboxScale) .. " (Click to Adjust)"
-end)
-
-ToggleGodMode.MouseButton1Click:Connect(function()
-    GodModeEnabled = not GodModeEnabled
-    EnableGodMode()
-    ToggleGodMode.Text = "Toggle God Mode: " .. (GodModeEnabled and "ON" or "OFF")
-end)
-
-ToggleGeneratorImmortal.MouseButton1Click:Connect(function()
-    GeneratorImmortalEnabled = not GeneratorImmortalEnabled
-    EnableGeneratorImmortal()
-    ToggleGeneratorImmortal.Text = "Toggle Generator Immortal: " .. (GeneratorImmortalEnabled and "ON" or "OFF")
-end)
-
-ToggleNoclip.MouseButton1Click:Connect(function()
-    NoclipEnabled = not NoclipEnabled
-    ToggleNoclip.Text = "Toggle Noclip: " .. (NoclipEnabled and "ON" or "OFF")
-end)
-
-ToggleFly.MouseButton1Click:Connect(function()
-    FlyEnabled = not FlyEnabled
-    ToggleFly.Text = "Toggle Fly Mode: " .. (FlyEnabled and "ON" or "OFF")
-end)
-
-SpeedSlider.MouseButton1Click:Connect(function()
-    SpeedValue = math.clamp(SpeedValue + 10, 16, 100)
-    Humanoid.WalkSpeed = SpeedValue
-    SpeedSlider.Text = "Speed: " .. SpeedValue .. " (Click to Adjust)"
-end)
-
-ToggleFastFire.MouseButton1Click:Connect(function()
-    FastFireEnabled = not FastFireEnabled
-    ModifyWeapons()
-    ToggleFastFire.Text = "Toggle Fast Fire: " .. (FastFireEnabled and "ON" or "OFF")
-end)
-
-FireRateSlider.MouseButton1Click:Connect(function()
-    FireRateMultiplier = math.clamp(FireRateMultiplier - 0.1, 0.1, 1.0) -- 0.1x = fastest, 1.0x = normal
-    FireRateSlider.Text = "Fire Rate: " .. string.format("%.1fx", 1.0 / FireRateMultiplier) .. " (Click to Adjust)"
-    ModifyWeapons()
-end)
-
--- Loops
-RunService.Stepped:Connect(function()
-    NoclipLoop()
-    FlyLoop()
-    Aimbot()
-end)
-
--- Respawn Handling
-Player.CharacterAdded:Connect(function(NewCharacter)
-    Character = NewCharacter
-    Humanoid = Character:WaitForChild("Humanoid")
-    RootPart = Character:WaitForChild("HumanoidRootPart")
-    if GodModeEnabled then EnableGodMode() end
-    Humanoid.WalkSpeed = math.min(SpeedValue, 50)
-    if FastFireEnabled then ModifyWeapons() end
-end)
-
--- Cleanup
-Player.AncestryChanged:Connect(function()
-    if not Player:IsDescendantOf(game) then
-        ScreenGui:Destroy()
-        BodyVelocity:Destroy()
-    end
-end)
-
-print("SCP: The Red Lake Hack Loaded! Use the GUI to toggle features.")
+-- Compatibilidade com Loadstring
+return "SCP: The Red Lake Hub Carregado"
