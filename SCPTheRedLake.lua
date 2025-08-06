@@ -1,12 +1,7 @@
 -- SCP: The Red Lake Hub
--- Script atualizado com UI aprimorada, aba de configurações e depuração
+-- Script atualizado com UI aprimorada, aba de configurações
 
 local Rayfield = loadstring(game:HttpGet('https://raw.githubusercontent.com/Rayfield/Rayfield/main/Loader.lua'))()
-if not Rayfield then
-    warn("Falha ao carregar a biblioteca Rayfield. Verifique a conexão ou o executor.")
-    return
-end
-
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local RunService = game:GetService("RunService")
@@ -227,4 +222,14 @@ ConfigTab:CreateSlider({
 
 -- Lidar com Reset do Personagem
 LocalPlayer.CharacterAdded:Connect(function(character)
-    if is
+    if isNoclip then toggleNoclip() toggleNoclip() end
+    if isFlying then toggleFly() toggleFly() end
+    if godModeEnabled then toggleGodMode() toggleGodMode() end
+end)
+
+-- Anti-Kick
+hookfunction(LocalPlayer.Kick, function() warn("Tentativa de kick bloqueada") end)
+
+-- Mensagem de Depuração
+print("SCP: The Red Lake Hub carregado com sucesso!")
+return "SCP: The Red Lake Hub Carregado"
