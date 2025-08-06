@@ -1,5 +1,5 @@
 -- SCP: The Red Lake Hub
--- Script atualizado com logs para Swift Executor, acesso ao dev console e ofuscação básica
+-- Script atualizado com correções de erros e logs salvos em C:\Users\matia\AppData\Roaming\Swift\Workspace
 
 local _R = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 local _P = game:GetService("Players")
@@ -32,6 +32,19 @@ local _fc
 local _ac
 local _hc = {}
 
+-- Logs para arquivo
+local _logFile = "C:\\Users\\matia\\AppData\\Roaming\\Swift\\Workspace\\SCPHubLogs.txt"
+local _logs = ""
+local function _pl(m)
+    local _t = os.date("%H:%M:%S") .. " - " .. tostring(m)
+    _logs = _logs .. _t .. "\n"
+    getgenv().SwiftLogs = _logs -- Para acesso na workspace
+    pcall(function() writefile(_logFile, _logs) end) -- Salva no arquivo, ignorando erros de permissão
+    print(_t)
+end
+local _oldPrint = print
+print = _pl
+
 -- Função Noclip
 local function _tn()
     _n = not _n
@@ -43,6 +56,8 @@ local function _tn()
                         p.CanCollide = false
                     end
                 end
+            else
+                _pl("Erro: Personagem não encontrado para Noclip")
             end
         end)
     else
@@ -57,19 +72,23 @@ local function _tf()
     if _f then
         local _bv = Instance.new("BodyVelocity")
         _bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-        _bv.Parent = _L.Character.HumanoidRootPart
-        _fc = _RS.Heartbeat:Connect(function()
-            if _L.Character and _L.Character.HumanoidRootPart then
-                local _md = Vector3.new(0, 0, 0)
-                if _UIS:IsKeyDown(Enum.KeyCode.W) then _md += _C.CFrame.LookVector end
-                if _UIS:IsKeyDown(Enum.KeyCode.S) then _md -= _C.CFrame.LookVector end
-                if _UIS:IsKeyDown(Enum.KeyCode.A) then _md -= _C.CFrame.RightVector end
-                if _UIS:IsKeyDown(Enum.KeyCode.D) then _md += _C.CFrame.RightVector end
-                if _UIS:IsKeyDown(Enum.KeyCode.Space) then _md += Vector3.new(0, 1, 0) end
-                if _UIS:IsKeyDown(Enum.KeyCode.LeftControl) then _md -= Vector3.new(0, 1, 0) end
-                _bv.Velocity = _md * _fs
-            end
-        end)
+        if _L.Character and _L.Character:WaitForChild("HumanoidRootPart", 1) then
+            _bv.Parent = _L.Character.HumanoidRootPart
+            _fc = _RS.Heartbeat:Connect(function()
+                if _L.Character and _L.Character.HumanoidRootPart then
+                    local _md = Vector3.new(0, 0, 0)
+                    if _UIS:IsKeyDown(Enum.KeyCode.W) then _md += _C.CFrame.LookVector end
+                    if _UIS:IsKeyDown(Enum.KeyCode.S) then _md -= _C.CFrame.LookVector end
+                    if _UIS:IsKeyDown(Enum.KeyCode.A) then _md -= _C.CFrame.RightVector end
+                    if _UIS:IsKeyDown(Enum.KeyCode.D) then _md += _C.CFrame.RightVector end
+                    if _UIS:IsKeyDown(Enum.KeyCode.Space) then _md += Vector3.new(0, 1, 0) end
+                    if _UIS:IsKeyDown(Enum.KeyCode.LeftControl) then _md -= Vector3.new(0, 1, 0) end
+                    _bv.Velocity = _md * _fs
+                end
+            end)
+        else
+            _pl("Erro: HumanoidRootPart não encontrado para Fly")
+        end
     else
         if _fc then _fc:Disconnect() end
         if _L.Character and _L.Character.HumanoidRootPart:FindFirstChild("BodyVelocity") then
@@ -82,11 +101,12 @@ end
 -- Função Walkspeed
 local function _sw(s)
     _ws = s
-    if _mw and _L.Character and _L.Character.Humanoid then
+    if _mw and _L.Character and _L.Character:WaitForChild("Humanoid", 1) then
         _L.Character.Humanoid.WalkSpeed = s
     end
     _L.CharacterAdded:Connect(function(c)
-        c:WaitForChild("Humanoid").WalkSpeed = _mw and _ws or _dws
+        local h = c:WaitForChild("Humanoid", 1)
+        if h then h.WalkSpeed = _mw and _ws or _dws end
     end)
     _R:Notify({ Title = "Walkspeed", Content = "Velocidade definida para " .. s .. (_mw and "" or " (alteração desativada)"), Duration = 3 })
 end
@@ -99,8 +119,10 @@ local function _tt()
             if i.UserInputType == Enum.UserInputType.MouseButton1 and _t then
                 local m = _L:GetMouse()
                 local h = m.Hit
-                if _L.Character and _L.Character:FindFirstChild("HumanoidRootPart") then
+                if _L.Character and _L.Character:WaitForChild("HumanoidRootPart", 1) then
                     _L.Character.HumanoidRootPart.CFrame = CFrame.new(h.Position + Vector3.new(0, 3, 0))
+                else
+                    _pl("Erro: HumanoidRootPart não encontrado para Teleport")
                 end
             end
         end)
@@ -113,33 +135,47 @@ local function _tg()
     _g = not _g
     if _g then
         local function _ph(h)
-            h.MaxHealth = math.huge
-            h.Health = math.huge
-            h:GetPropertyChangedSignal("Health"):Connect(function()
-                if h.Health < math.huge then
-                    h.Health = math.huge
-                end
-            end)
+            if h then
+                h.MaxHealth = math.huge
+                h.Health = math.huge
+                h:GetPropertyChangedSignal("Health"):Connect(function()
+                    if h.Health < math.huge then
+                        h.Health = math.huge
+                    end
+                end)
+            else
+                _pl("Erro: Humanoid não encontrado para God Mode")
+            end
         end
-        if _L.Character and _L.Character:FindFirstChild("Humanoid") then
+        if _L.Character and _L.Character:WaitForChild("Humanoid", 1) then
             _ph(_L.Character.Humanoid)
         end
         _L.CharacterAdded:Connect(function(c)
-            c:WaitForChild("Humanoid").MaxHealth = math.huge
-            c:WaitForChild("Humanoid").Health = math.huge
-            _ph(c.Humanoid)
+            local h = c:WaitForChild("Humanoid", 1)
+            if h then
+                h.MaxHealth = math.huge
+                h.Health = math.huge
+                _ph(h)
+            end
         end)
-        local _otd = _L.Character.Humanoid.TakeDamage
-        _L.Character.Humanoid.TakeDamage = function(s, d)
-            if _g then return 0 end
-            return _otd(s, d)
+        local _otd = _L.Character and _L.Character.Humanoid.TakeDamage or function() end
+        if _L.Character and _L.Character:WaitForChild("Humanoid", 1) then
+            _L.Character.Humanoid.TakeDamage = function(s, d)
+                if _g then
+                    _pl("Dano bloqueado: " .. tostring(d))
+                    return 0
+                end
+                return _otd(s, d)
+            end
         end
     else
-        if _L.Character and _L.Character:FindFirstChild("Humanoid") then
+        if _L.Character and _L.Character:WaitForChild("Humanoid", 1) then
             _L.Character.Humanoid.MaxHealth = 100
             _L.Character.Humanoid.Health = 100
         end
-        _L.Character.Humanoid.TakeDamage = _otd
+        if _otd and _L.Character and _L.Character:WaitForChild("Humanoid", 1) then
+            _L.Character.Humanoid.TakeDamage = _otd
+        end
     end
     _R:Notify({ Title = "God Mode", Content = _g and "God Mode Ativado" or "God Mode Desativado", Duration = 3 })
 end
@@ -149,11 +185,11 @@ local function _ta()
     _a = not _a
     if _a then
         _ac = _RS.RenderStepped:Connect(function()
-            if _L.Character and _L.Character:FindFirstChild("HumanoidRootPart") then
+            if _L.Character and _L.Character:WaitForChild("HumanoidRootPart", 1) then
                 local _cd = math.huge
                 local _ct = nil
                 for _, d in pairs(_W.NPCs:GetDescendants()) do
-                    if d:FindFirstChild("HumanoidRootPart") and d.Parent.Name ~= "Deceased" and d.Parent.Name ~= "Friends" and d.Parent.Name ~= "Survivors" then
+                    if d:WaitForChild("HumanoidRootPart", 0.1) and d.Parent.Name ~= "Deceased" and d.Parent.Name ~= "Friends" and d.Parent.Name ~= "Survivors" then
                         local _d = (d.HumanoidRootPart.Position - _L.Character.HumanoidRootPart.Position).Magnitude
                         if _d < _cd and _d < _ar then
                             _cd = _d
@@ -161,12 +197,14 @@ local function _ta()
                         end
                     end
                 end
-                if _ct and _ct:FindFirstChild("Head") then
+                if _ct and _ct:WaitForChild("Head", 0.1) then
                     local _tp = _ct.Head.Position
                     local _cc = _C.CFrame
                     local _tc = CFrame.new(_cc.Position, _tp)
                     _C.CFrame = _cc:Lerp(_tc, 0.15)
                 end
+            else
+                _pl("Erro: Personagem ou HumanoidRootPart não encontrado para Aimbot")
             end
         end)
     else
@@ -180,19 +218,23 @@ local function _ti()
     _ia = not _ia
     if _ia then
         local function _ua()
-            for _, t in pairs(_L.Backpack:GetChildren()) do
-                if t:FindFirstChild("Ammo") or t:FindFirstChild("CurrentAmmo") then
-                    if t:FindFirstChild("Ammo") then t.Ammo.Value = math.huge end
-                    if t:FindFirstChild("CurrentAmmo") then t.CurrentAmmo.Value = math.huge end
+            if _L.Backpack then
+                for _, t in pairs(_L.Backpack:GetChildren()) do
+                    if t:FindFirstChild("Ammo") or t:FindFirstChild("CurrentAmmo") then
+                        if t:FindFirstChild("Ammo") then t.Ammo.Value = math.huge end
+                        if t:FindFirstChild("CurrentAmmo") then t.CurrentAmmo.Value = math.huge end
+                    end
                 end
             end
-            if _L.Character then
+            if _L.Character and _L.Character:WaitForChild("Humanoid", 1) then
                 for _, t in pairs(_L.Character:GetChildren()) do
                     if t:IsA("Tool") and (t:FindFirstChild("Ammo") or t:FindFirstChild("CurrentAmmo")) then
                         if t:FindFirstChild("Ammo") then t.Ammo.Value = math.huge end
                         if t:FindFirstChild("CurrentAmmo") then t.CurrentAmmo.Value = math.huge end
                     end
                 end
+            else
+                _pl("Erro: Character não encontrado para Munição Infinita")
             end
         end
         _RS.Heartbeat:Connect(_ua)
@@ -227,7 +269,7 @@ local function _tfir()
         for _, t in pairs(_L.Backpack:GetChildren()) do
             _mfr(t)
         end
-        if _L.Character then
+        if _L.Character and _L.Character:WaitForChild("Humanoid", 1) then
             for _, t in pairs(_L.Character:GetChildren()) do
                 if t:IsA("Tool") then
                     _mfr(t)
@@ -262,7 +304,7 @@ local function _tcd()
         for _, t in pairs(_L.Backpack:GetChildren()) do
             _md(t)
         end
-        if _L.Character then
+        if _L.Character and _L.Character:WaitForChild("Humanoid", 1) then
             for _, t in pairs(_L.Character:GetChildren()) do
                 if t:IsA("Tool") then
                     _md(t)
@@ -278,7 +320,7 @@ local function _th()
     _h = not _h
     if _h then
         local function _ch(m)
-            if m:FindFirstChild("Humanoid") and m ~= _L.Character and m:FindFirstChild("HumanoidRootPart") then
+            if m and m:WaitForChild("Humanoid", 1) and m ~= _L.Character and m:WaitForChild("HumanoidRootPart", 1) then
                 local _hrp = m.HumanoidRootPart
                 local _hb = Instance.new("Part")
                 _hb.Name = "Hitbox"
@@ -294,8 +336,11 @@ local function _th()
                         _hb.Position = _hrp.Position
                     else
                         _hb:Destroy()
+                        _pl("Erro: HumanoidRootPart perdido para Hitbox em " .. m.Name)
                     end
                 end))
+            else
+                _pl("Erro: Modelo inválido ou sem HumanoidRootPart para Hitbox em " .. (m and m.Name or "desconhecido"))
             end
         end
         for _, d in pairs(_W:GetDescendants()) do
@@ -305,6 +350,7 @@ local function _th()
         end
         _W.DescendantAdded:Connect(function(d)
             if d:FindFirstChild("Humanoid") and d.Parent:FindFirstChild("HumanoidRootPart") and _h then
+                wait(0.1) -- Pequeno delay para garantir carregamento
                 _ch(d.Parent)
             end
         end)
@@ -326,26 +372,15 @@ local function _th()
     _R:Notify({ Title = "Hitbox", Content = _h and "Ativado" or "Desativado", Duration = 3 })
 end
 
--- Logs para Swift Executor
-local _logs = ""
-local function _pl(m)
-    _logs = _logs .. os.date("%H:%M:%S") .. " - " .. tostring(m) .. "\n"
-    getgenv().SwiftLogs = _logs -- Exporta para a workspace do Swift
-    print(m)
-end
-local _oldPrint = print
-print = _pl
-
 -- Acesso ao Dev Console
 local function _dc()
     _UIS.InputBegan:Connect(function(i)
         if i.KeyCode == Enum.KeyCode.F2 then
             _pl("F2 pressionado - Tentando acessar dev console...")
-            -- Simula comandos de todos os níveis
             local _cmds = {
                 { level = "No Name", cmd = "Thompson", args = {} },
                 { level = "No Name", cmd = "Cinematic", args = {} },
-                { level = "Trial Moderator", cmd = "watch", args = {_P:GetPlayers()[2] or _L} }, -- Segue outro player, se existir
+                { level = "Trial Moderator", cmd = "watch", args = {_P:GetPlayers()[2] or _L} },
                 { level = "Trial Moderator", cmd = "teleport", args = {_L, _P:GetPlayers()[2] or _L} },
                 { level = "Trial Moderator", cmd = "respawn", args = {_L} },
                 { level = "Trial Moderator", cmd = "Kick", args = {_P:GetPlayers()[2] or _L} },
@@ -353,7 +388,7 @@ local function _dc()
                 { level = "Trial Moderator", cmd = "Heal", args = {_L} },
                 { level = "Trial Moderator", cmd = "Killall", args = {} },
                 { level = "Trial Moderator", cmd = "Help", args = {} },
-                { level = "Game Owner", cmd = "CustomOwnerCmd", args = {} } -- Placeholder para comandos de dono
+                { level = "Game Owner", cmd = "CustomOwnerCmd", args = {} }
             }
             for _, c in pairs(_cmds) do
                 local _success, _result = pcall(function()
@@ -381,7 +416,7 @@ _mt:CreateToggle({ Name = "Fly", CurrentValue = false, Callback = _tf })
 _mt:CreateToggle({ Name = "Aimbot", CurrentValue = false, Callback = _ta })
 _mt:CreateToggle({ Name = "God Mode", CurrentValue = false, Callback = _tg })
 _mt:CreateToggle({ Name = "Teleporte por Clique", CurrentValue = false, Callback = _tt })
-_mt:CreateToggle({ Name = "Alterar Velocidade de Caminhada", CurrentValue = false, Callback = function(v) _mw = v; if _L.Character and _L.Character.Humanoid then _L.Character.Humanoid.WalkSpeed = _mw and _ws or _dws end; _R:Notify({ Title = "Configuração", Content = "Alteração de Walkspeed " .. (_mw and "Ativada" or "Desativada"), Duration = 3 }) end })
+_mt:CreateToggle({ Name = "Alterar Velocidade de Caminhada", CurrentValue = false, Callback = function(v) _mw = v; if _L.Character and _L.Character:WaitForChild("Humanoid", 1) then _L.Character.Humanoid.WalkSpeed = _mw and _ws or _dws end; _R:Notify({ Title = "Configuração", Content = "Alteração de Walkspeed " .. (_mw and "Ativada" or "Desativada"), Duration = 3 }) end })
 _mt:CreateToggle({ Name = "Munição Infinita", CurrentValue = false, Callback = _ti })
 _mt:CreateToggle({ Name = "Disparos Rápidos", CurrentValue = false, Callback = _tfir })
 _mt:CreateToggle({ Name = "Dano Personalizado", CurrentValue = false, Callback = _tcd })
@@ -389,51 +424,4 @@ _mt:CreateToggle({ Name = "Hitbox Quadrado", CurrentValue = false, Callback = _t
 
 -- Aba Configurações
 local _ct = _R:CreateTab("Configurações", 4483362458)
-_ct:CreateSlider({ Name = "Velocidade de Voo", Range = {10, 200}, Increment = 1, CurrentValue = 50, Callback = function(v) _fs = v; _R:Notify({ Title = "Configuração", Content = "Velocidade de Voo definida para " .. v, Duration = 3 }) end })
-_ct:CreateSlider({ Name = "Velocidade de Caminhada", Range = {16, 200}, Increment = 1, CurrentValue = 16, Callback = function(v) _sw(v) end })
-_ct:CreateSlider({ Name = "Alcance do Aimbot", Range = {100, 1000}, Increment = 10, CurrentValue = 500, Callback = function(v) _ar = v; _R:Notify({ Title = "Configuração", Content = "Alcance do Aimbot definido para " .. v, Duration = 3 }) end })
-_ct:CreateSlider({ Name = "Taxa de Disparo (segundos)", Range = {0.01, 1}, Increment = 0.01, CurrentValue = 0.1, Callback = function(v) _fr = v; _R:Notify({ Title = "Configuração", Content = "Taxa de Disparo definida para " .. v .. "s", Duration = 3 }) end })
-_ct:CreateSlider({ Name = "Dano da Arma", Range = {1, 500}, Increment = 1, CurrentValue = 50, Callback = function(v) _wd = v; _R:Notify({ Title = "Configuração", Content = "Dano da Arma definido para " .. v, Duration = 3 }) end })
-_ct:CreateSlider({ Name = "Tamanho do Hitbox", Range = {1, 20}, Increment = 1, CurrentValue = 5, Callback = function(v) _hs = v; if _h then _th(); _th() end; _R:Notify({ Title = "Configuração", Content = "Tamanho do Hitbox definido para " .. v .. " studs", Duration = 3 }) end })
-
--- Função de Fechamento Completo
-local function _chub()
-    if _n then _tn() end
-    if _f then _tf() end
-    if _a then _ta() end
-    if _g then _tg() end
-    if _t then _tt() end
-    if _ia then _ti() end
-    if _ff then _tfir() end
-    if _cd then _tcd() end
-    if _h then _th() end
-    if _fc then _fc:Disconnect() end
-    if _ac then _ac:Disconnect() end
-    for _, c in pairs(_hc) do
-        c:Disconnect()
-    end
-    _hc = {}
-    for _, v in pairs(getfenv()) do
-        if type(v) == "function" and v ~= _chub then v = nil end
-    end
-    _R:Destroy()
-    collectgarbage()
-    _pl("SCP: The Red Lake Hub fechado completamente!")
-end
-
--- Associar o fechamento ao botão X
-Window.OnClose = _chub
-
--- Lidar com Reset do Personagem
-_L.CharacterAdded:Connect(function(c)
-    if _n then _tn(); _tn() end
-    if _f then _tf(); _tf() end
-    if _g then _tg(); _tg() end
-    if _L.Character and _L.Character.Humanoid then
-        _L.Character.Humanoid.WalkSpeed = _mw and _ws or _dws
-    end
-    if _ia then _ti() end
-    if _ff then _tfir() end
-    if _cd then _tcd() end
-    if _h then _th(); _th() end
-end)
+_ct:CreateSlider({ Name = "Velocidade de Voo", Range = {10, 200}, Increment
