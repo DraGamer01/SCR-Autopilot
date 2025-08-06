@@ -1,0 +1,1 @@
+loadstring(game:HttpGet("https://raw.githubusercontent.com/DraGamer01/Scripts/main/SCP:%20The%20Red%20Lake.lua"))()
