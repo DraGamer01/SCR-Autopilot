@@ -1,5 +1,5 @@
 -- SCP: The Red Lake Hub
--- Script atualizado com correções de erros e logs salvos em C:\Users\matia\AppData\Roaming\Swift\Workspace
+-- Script atualizado com correções de erros e logs otimizados
 
 local _R = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 local _P = game:GetService("Players")
@@ -32,14 +32,14 @@ local _fc
 local _ac
 local _hc = {}
 
--- Logs para arquivo
+-- Logs para memória e tentativa de arquivo
 local _logFile = "C:\\Users\\matia\\AppData\\Roaming\\Swift\\Workspace\\SCPHubLogs.txt"
 local _logs = ""
 local function _pl(m)
     local _t = os.date("%H:%M:%S") .. " - " .. tostring(m)
     _logs = _logs .. _t .. "\n"
     getgenv().SwiftLogs = _logs -- Para acesso na workspace
-    pcall(function() writefile(_logFile, _logs) end) -- Salva no arquivo, ignorando erros de permissão
+    pcall(function() writefile(_logFile, _logs) end) -- Tenta salvar, mas ignora erros
     print(_t)
 end
 local _oldPrint = print
@@ -416,12 +416,4 @@ _mt:CreateToggle({ Name = "Fly", CurrentValue = false, Callback = _tf })
 _mt:CreateToggle({ Name = "Aimbot", CurrentValue = false, Callback = _ta })
 _mt:CreateToggle({ Name = "God Mode", CurrentValue = false, Callback = _tg })
 _mt:CreateToggle({ Name = "Teleporte por Clique", CurrentValue = false, Callback = _tt })
-_mt:CreateToggle({ Name = "Alterar Velocidade de Caminhada", CurrentValue = false, Callback = function(v) _mw = v; if _L.Character and _L.Character:WaitForChild("Humanoid", 1) then _L.Character.Humanoid.WalkSpeed = _mw and _ws or _dws end; _R:Notify({ Title = "Configuração", Content = "Alteração de Walkspeed " .. (_mw and "Ativada" or "Desativada"), Duration = 3 }) end })
-_mt:CreateToggle({ Name = "Munição Infinita", CurrentValue = false, Callback = _ti })
-_mt:CreateToggle({ Name = "Disparos Rápidos", CurrentValue = false, Callback = _tfir })
-_mt:CreateToggle({ Name = "Dano Personalizado", CurrentValue = false, Callback = _tcd })
-_mt:CreateToggle({ Name = "Hitbox Quadrado", CurrentValue = false, Callback = _th })
-
--- Aba Configurações
-local _ct = _R:CreateTab("Configurações", 4483362458)
-_ct:CreateSlider({ Name = "Velocidade de Voo", Range = {10, 200}, Increment
+_mt:CreateToggle({ Name = "Alterar Velocidade de Caminhada", CurrentValue = false, Callback = function(v) _mw = v; if _L.Character and _L.Character:WaitForChild("Humanoid", 1) then _L.Character.Humanoid.WalkSpeed = _mw and _ws or _dws end; _R:Notify
