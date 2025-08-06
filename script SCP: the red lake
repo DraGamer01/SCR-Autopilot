@@ -1,1 +1,1 @@
-loadstring(game:HttpGet("https://raw.githubusercontent.com/DraGamer01/Scripts/main/SCP:TheRedLake.lua"))()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/DraGamer01/Scripts/main/SCPTheRedLake.lua"))()
