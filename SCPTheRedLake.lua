@@ -1,511 +1,439 @@
 -- SCP: The Red Lake Hub
--- Script atualizado com UI aprimorada, todas as funcionalidades, novas opções (munição infinita, disparos rápidos, dano da arma, hitbox quadrado)
+-- Script atualizado com logs para Swift Executor, acesso ao dev console e ofuscação básica
 
-local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Workspace = game:GetService("Workspace")
-local Camera = Workspace.CurrentCamera
+local _R = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+local _P = game:GetService("Players")
+local _L = _P.LocalPlayer
+local _RS = game:GetService("RunService")
+local _UIS = game:GetService("UserInputService")
+local _RS = game:GetService("ReplicatedStorage")
+local _W = game:GetService("Workspace")
+local _C = _W.CurrentCamera
 
--- UI Setup
-local Window = Rayfield:CreateWindow({
-    Name = "SCP: The Red Lake Hub",
-    LoadingTitle = "Carregando SCP Hub...",
-    LoadingSubtitle = "por DraGamer01 (Atualizado)",
-    ConfigurationSaving = { Enabled = true, FolderName = "SCPRedLakeHub", FileName = "Config" }
-})
-
--- Variáveis
-local isNoclip = false
-local isFlying = false
-local flySpeed = 50
-local defaultWalkSpeed = 16
-local walkSpeed = defaultWalkSpeed
-local aimbotEnabled = false
-local aimbotRange = 500
-local teleportEnabled = false
-local godModeEnabled = false
-local modifyWalkSpeed = false
-local infiniteAmmoEnabled = false
-local fastFireEnabled = false
-local fireRate = 0.1 -- Padrão: 0.1 segundos por tiro
-local customDamageEnabled = false
-local weaponDamage = 50 -- Padrão: 50 de dano
-local hitboxEnabled = false
-local hitboxSize = 5 -- Padrão: 5 studs
-local flyConnection
-local aimbotConnection
-local hitboxConnections = {}
+-- Variáveis ofuscadas
+local _n = false
+local _f = false
+local _fs = 50
+local _dws = 16
+local _ws = _dws
+local _a = false
+local _ar = 500
+local _t = false
+local _g = false
+local _mw = false
+local _ia = false
+local _ff = false
+local _fr = 0.1
+local _cd = false
+local _wd = 50
+local _h = false
+local _hs = 5
+local _fc
+local _ac
+local _hc = {}
 
 -- Função Noclip
-local function toggleNoclip()
-    isNoclip = not isNoclip
-    if isNoclip then
-        RunService:BindToRenderStep("Noclip", Enum.RenderPriority.Character.Value, function()
-            if LocalPlayer.Character then
-                for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
-                    if part:IsA("BasePart") then
-                        part.CanCollide = false
+local function _tn()
+    _n = not _n
+    if _n then
+        _RS:BindToRenderStep("Noclip", Enum.RenderPriority.Character.Value, function()
+            if _L.Character then
+                for _, p in pairs(_L.Character:GetDescendants()) do
+                    if p:IsA("BasePart") then
+                        p.CanCollide = false
                     end
                 end
             end
         end)
     else
-        RunService:UnbindFromRenderStep("Noclip")
+        _RS:UnbindFromRenderStep("Noclip")
     end
-    Rayfield:Notify({ Title = "Noclip", Content = isNoclip and "Noclip Ativado" or "Noclip Desativado", Duration = 3 })
+    _R:Notify({ Title = "Noclip", Content = _n and "Noclip Ativado" or "Noclip Desativado", Duration = 3 })
 end
 
 -- Função Fly
-local function toggleFly()
-    isFlying = not isFlying
-    if isFlying then
-        local bodyVelocity = Instance.new("BodyVelocity")
-        bodyVelocity.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-        bodyVelocity.Parent = LocalPlayer.Character.HumanoidRootPart
-        flyConnection = RunService.Heartbeat:Connect(function()
-            if LocalPlayer.Character and LocalPlayer.Character.HumanoidRootPart then
-                local moveDirection = Vector3.new(0, 0, 0)
-                if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDirection += Camera.CFrame.LookVector end
-                if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDirection -= Camera.CFrame.LookVector end
-                if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveDirection -= Camera.CFrame.RightVector end
-                if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDirection += Camera.CFrame.RightVector end
-                if UserInputService:IsKeyDown(Enum.KeyCode.Space) then moveDirection += Vector3.new(0, 1, 0) end
-                if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then moveDirection -= Vector3.new(0, 1, 0) end
-                bodyVelocity.Velocity = moveDirection * flySpeed
+local function _tf()
+    _f = not _f
+    if _f then
+        local _bv = Instance.new("BodyVelocity")
+        _bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+        _bv.Parent = _L.Character.HumanoidRootPart
+        _fc = _RS.Heartbeat:Connect(function()
+            if _L.Character and _L.Character.HumanoidRootPart then
+                local _md = Vector3.new(0, 0, 0)
+                if _UIS:IsKeyDown(Enum.KeyCode.W) then _md += _C.CFrame.LookVector end
+                if _UIS:IsKeyDown(Enum.KeyCode.S) then _md -= _C.CFrame.LookVector end
+                if _UIS:IsKeyDown(Enum.KeyCode.A) then _md -= _C.CFrame.RightVector end
+                if _UIS:IsKeyDown(Enum.KeyCode.D) then _md += _C.CFrame.RightVector end
+                if _UIS:IsKeyDown(Enum.KeyCode.Space) then _md += Vector3.new(0, 1, 0) end
+                if _UIS:IsKeyDown(Enum.KeyCode.LeftControl) then _md -= Vector3.new(0, 1, 0) end
+                _bv.Velocity = _md * _fs
             end
         end)
     else
-        if flyConnection then flyConnection:Disconnect() end
-        if LocalPlayer.Character and LocalPlayer.Character.HumanoidRootPart:FindFirstChild("BodyVelocity") then
-            LocalPlayer.Character.HumanoidRootPart.BodyVelocity:Destroy()
+        if _fc then _fc:Disconnect() end
+        if _L.Character and _L.Character.HumanoidRootPart:FindFirstChild("BodyVelocity") then
+            _L.Character.HumanoidRootPart.BodyVelocity:Destroy()
         end
     end
-    Rayfield:Notify({ Title = "Fly", Content = isFlying and "Fly Ativado" or "Fly Desativado", Duration = 3 })
+    _R:Notify({ Title = "Fly", Content = _f and "Fly Ativado" or "Fly Desativado", Duration = 3 })
 end
 
 -- Função Walkspeed
-local function setWalkspeed(speed)
-    walkSpeed = speed
-    if modifyWalkSpeed and LocalPlayer.Character and LocalPlayer.Character.Humanoid then
-        LocalPlayer.Character.Humanoid.WalkSpeed = speed
+local function _sw(s)
+    _ws = s
+    if _mw and _L.Character and _L.Character.Humanoid then
+        _L.Character.Humanoid.WalkSpeed = s
     end
-    LocalPlayer.CharacterAdded:Connect(function(character)
-        character:WaitForChild("Humanoid").WalkSpeed = modifyWalkSpeed and walkSpeed or defaultWalkSpeed
+    _L.CharacterAdded:Connect(function(c)
+        c:WaitForChild("Humanoid").WalkSpeed = _mw and _ws or _dws
     end)
-    Rayfield:Notify({ Title = "Walkspeed", Content = "Velocidade definida para " .. speed .. (modifyWalkSpeed and "" or " (alteração desativada)"), Duration = 3 })
-end
-
--- Função Aimbot
-local function getClosestEnemy()
-    local closestEnemy = nil
-    local closestDistance = math.huge
-    for _, player in pairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0 then
-            local humanoidRootPart = player.Character:FindFirstChild("HumanoidRootPart")
-            if humanoidRootPart then
-                local distance = (humanoidRootPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
-                if distance < closestDistance and distance < aimbotRange then
-                    closestEnemy = player.Character
-                    closestDistance = distance
-                end
-            end
-        end
-    end
-    return closestEnemy
-end
-
-local function toggleAimbot()
-    aimbotEnabled = not aimbotEnabled
-    if aimbotEnabled then
-        aimbotConnection = RunService.RenderStepped:Connect(function()
-            if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                local enemy = getClosestEnemy()
-                if enemy and enemy:FindFirstChild("HumanoidRootPart") then
-                    Camera.CFrame = CFrame.new(Camera.CFrame.Position, enemy.HumanoidRootPart.Position)
-                end
-            end
-        end)
-    else
-        if aimbotConnection then aimbotConnection:Disconnect() end
-    end
-    Rayfield:Notify({ Title = "Aimbot", Content = aimbotEnabled and "Aimbot Ativado" or "Aimbot Desativado", Duration = 3 })
-end
-
--- Função God Mode
-local function toggleGodMode()
-    godModeEnabled = not godModeEnabled
-    if godModeEnabled then
-        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-            local humanoid = LocalPlayer.Character.Humanoid
-            humanoid.MaxHealth = math.huge
-            humanoid.Health = math.huge
-            humanoid:GetPropertyChangedSignal("Health"):Connect(function()
-                if humanoid.Health < math.huge then
-                    humanoid.Health = math.huge
-                end
-            end)
-        end
-        LocalPlayer.CharacterAdded:Connect(function(character)
-            character:WaitForChild("Humanoid").MaxHealth = math.huge
-            character:WaitForChild("Humanoid").Health = math.huge
-            character:WaitForChild("Humanoid"):GetPropertyChangedSignal("Health"):Connect(function()
-                if character.Humanoid.Health < math.huge then
-                    character.Humanoid.Health = math.huge
-                end
-            end)
-        end)
-    else
-        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-            LocalPlayer.Character.Humanoid.MaxHealth = 100
-            LocalPlayer.Character.Humanoid.Health = 100
-        end
-    end
-    Rayfield:Notify({ Title = "God Mode", Content = godModeEnabled and "God Mode Ativado" or "God Mode Desativado", Duration = 3 })
+    _R:Notify({ Title = "Walkspeed", Content = "Velocidade definida para " .. s .. (_mw and "" or " (alteração desativada)"), Duration = 3 })
 end
 
 -- Função Teleport
-local function toggleTeleport()
-    teleportEnabled = not teleportEnabled
-    if teleportEnabled then
-        UserInputService.InputBegan:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 and teleportEnabled then
-                local mouse = LocalPlayer:GetMouse()
-                local hit = mouse.Hit
-                if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                    LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(hit.Position + Vector3.new(0, 3, 0))
+local function _tt()
+    _t = not _t
+    if _t then
+        _UIS.InputBegan:Connect(function(i)
+            if i.UserInputType == Enum.UserInputType.MouseButton1 and _t then
+                local m = _L:GetMouse()
+                local h = m.Hit
+                if _L.Character and _L.Character:FindFirstChild("HumanoidRootPart") then
+                    _L.Character.HumanoidRootPart.CFrame = CFrame.new(h.Position + Vector3.new(0, 3, 0))
                 end
             end
         end)
     end
-    Rayfield:Notify({ Title = "Teleporte", Content = teleportEnabled and "Teleporte por Clique Ativado" or "Teleporte por Clique Desativado", Duration = 3 })
+    _R:Notify({ Title = "Teleporte", Content = _t and "Teleporte por Clique Ativado" or "Teleporte por Clique Desativado", Duration = 3 })
 end
 
--- Função Munição Infinita
-local function toggleInfiniteAmmo()
-    infiniteAmmoEnabled = not infiniteAmmoEnabled
-    if infiniteAmmoEnabled then
-        local function updateAmmo()
-            for _, tool in pairs(LocalPlayer.Backpack:GetChildren()) do
-                if tool:FindFirstChild("Ammo") then
-                    tool.Ammo.Value = math.huge
-                end
-            end
-            if LocalPlayer.Character and LocalPlayer.Character:FindFirstChildWhichIsA("Tool") then
-                for _, tool in pairs(LocalPlayer.Character:GetChildren()) do
-                    if tool:FindFirstChild("Ammo") then
-                        tool.Ammo.Value = math.huge
-                    end
-                end
-            end
-        end
-        RunService.Heartbeat:Connect(updateAmmo)
-    end
-    Rayfield:Notify({ Title = "Munição Infinita", Content = infiniteAmmoEnabled and "Ativado" or "Desativado", Duration = 3 })
-end
-
--- Função Disparos Super Rápidos
-local function toggleFastFire()
-    fastFireEnabled = not fastFireEnabled
-    if fastFireEnabled then
-        local function modifyFireRate(tool)
-            if tool and tool:FindFirstChild("FireRate") then
-                local originalFireRate = tool.FireRate.Value
-                tool.FireRate.Value = fireRate
-                tool:GetPropertyChangedSignal("FireRate"):Connect(function()
-                    if fastFireEnabled then
-                        tool.FireRate.Value = fireRate
-                    else
-                        tool.FireRate.Value = originalFireRate
-                    end
-                end)
-            end
-        end
-        LocalPlayer.CharacterAdded:Connect(function(character)
-            character.ChildAdded:Connect(function(child)
-                if child:IsA("Tool") then
-                    modifyFireRate(child)
+-- Função God Mode
+local function _tg()
+    _g = not _g
+    if _g then
+        local function _ph(h)
+            h.MaxHealth = math.huge
+            h.Health = math.huge
+            h:GetPropertyChangedSignal("Health"):Connect(function()
+                if h.Health < math.huge then
+                    h.Health = math.huge
                 end
             end)
+        end
+        if _L.Character and _L.Character:FindFirstChild("Humanoid") then
+            _ph(_L.Character.Humanoid)
+        end
+        _L.CharacterAdded:Connect(function(c)
+            c:WaitForChild("Humanoid").MaxHealth = math.huge
+            c:WaitForChild("Humanoid").Health = math.huge
+            _ph(c.Humanoid)
         end)
-        for _, tool in pairs(LocalPlayer.Backpack:GetChildren()) do
-            modifyFireRate(tool)
+        local _otd = _L.Character.Humanoid.TakeDamage
+        _L.Character.Humanoid.TakeDamage = function(s, d)
+            if _g then return 0 end
+            return _otd(s, d)
         end
-        if LocalPlayer.Character then
-            for _, tool in pairs(LocalPlayer.Character:GetChildren()) do
-                if tool:IsA("Tool") then
-                    modifyFireRate(tool)
-                end
-            end
+    else
+        if _L.Character and _L.Character:FindFirstChild("Humanoid") then
+            _L.Character.Humanoid.MaxHealth = 100
+            _L.Character.Humanoid.Health = 100
         end
+        _L.Character.Humanoid.TakeDamage = _otd
     end
-    Rayfield:Notify({ Title = "Disparos Rápidos", Content = fastFireEnabled and "Ativado" or "Desativado", Duration = 3 })
+    _R:Notify({ Title = "God Mode", Content = _g and "God Mode Ativado" or "God Mode Desativado", Duration = 3 })
 end
 
--- Função Alteração do Dano da Arma
-local function toggleCustomDamage()
-    customDamageEnabled = not customDamageEnabled
-    if customDamageEnabled then
-        local function modifyDamage(tool)
-            if tool and tool:FindFirstChild("Damage") then
-                tool.Damage.Value = weaponDamage
-                tool:GetPropertyChangedSignal("Damage"):Connect(function()
-                    if customDamageEnabled then
-                        tool.Damage.Value = weaponDamage
+-- Função Aimbot
+local function _ta()
+    _a = not _a
+    if _a then
+        _ac = _RS.RenderStepped:Connect(function()
+            if _L.Character and _L.Character:FindFirstChild("HumanoidRootPart") then
+                local _cd = math.huge
+                local _ct = nil
+                for _, d in pairs(_W.NPCs:GetDescendants()) do
+                    if d:FindFirstChild("HumanoidRootPart") and d.Parent.Name ~= "Deceased" and d.Parent.Name ~= "Friends" and d.Parent.Name ~= "Survivors" then
+                        local _d = (d.HumanoidRootPart.Position - _L.Character.HumanoidRootPart.Position).Magnitude
+                        if _d < _cd and _d < _ar then
+                            _cd = _d
+                            _ct = d
+                        end
                     end
-                end)
-            end
-        end
-        LocalPlayer.CharacterAdded:Connect(function(character)
-            character.ChildAdded:Connect(function(child)
-                if child:IsA("Tool") then
-                    modifyDamage(child)
                 end
-            end)
-        end)
-        for _, tool in pairs(LocalPlayer.Backpack:GetChildren()) do
-            modifyDamage(tool)
-        end
-        if LocalPlayer.Character then
-            for _, tool in pairs(LocalPlayer.Character:GetChildren()) do
-                if tool:IsA("Tool") then
-                    modifyDamage(tool)
+                if _ct and _ct:FindFirstChild("Head") then
+                    local _tp = _ct.Head.Position
+                    local _cc = _C.CFrame
+                    local _tc = CFrame.new(_cc.Position, _tp)
+                    _C.CFrame = _cc:Lerp(_tc, 0.15)
                 end
-            end
-        end
-    end
-    Rayfield:Notify({ Title = "Dano Personalizado", Content = customDamageEnabled and "Ativado" or "Desativado", Duration = 3 })
-end
-
--- Função Hitbox Quadrado
-local function toggleHitbox()
-    hitboxEnabled = not hitboxEnabled
-    if hitboxEnabled then
-        for _, descendant in pairs(Workspace:GetDescendants()) do
-            if descendant:FindFirstChild("Humanoid") and descendant ~= LocalPlayer.Character then
-                local hitbox = Instance.new("Part")
-                hitbox.Size = Vector3.new(hitboxSize, hitboxSize, hitboxSize)
-                hitbox.Position = descendant.HumanoidRootPart.Position
-                hitbox.Anchored = true
-                hitbox.CanCollide = false
-                hitbox.Transparency = 0.7
-                hitbox.BrickColor = BrickColor.new("Bright red")
-                hitbox.Parent = descendant
-                table.insert(hitboxConnections, RunService.Heartbeat:Connect(function()
-                    if descendant and descendant:FindFirstChild("HumanoidRootPart") then
-                        hitbox.Position = descendant.HumanoidRootPart.Position
-                    else
-                        hitbox:Destroy()
-                    end
-                end))
-            end
-        end
-        Workspace.DescendantAdded:Connect(function(descendant)
-            if descendant:FindFirstChild("Humanoid") and descendant ~= LocalPlayer.Character and hitboxEnabled then
-                local hitbox = Instance.new("Part")
-                hitbox.Size = Vector3.new(hitboxSize, hitboxSize, hitboxSize)
-                hitbox.Position = descendant.HumanoidRootPart.Position
-                hitbox.Anchored = true
-                hitbox.CanCollide = false
-                hitbox.Transparency = 0.7
-                hitbox.BrickColor = BrickColor.new("Bright red")
-                hitbox.Parent = descendant
-                table.insert(hitboxConnections, RunService.Heartbeat:Connect(function()
-                    if descendant and descendant:FindFirstChild("HumanoidRootPart") then
-                        hitbox.Position = descendant.HumanoidRootPart.Position
-                    else
-                        hitbox:Destroy()
-                    end
-                end))
             end
         end)
     else
-        for _, connection in pairs(hitboxConnections) do
-            connection:Disconnect()
+        if _ac then _ac:Disconnect() end
+    end
+    _R:Notify({ Title = "Aimbot", Content = _a and "Aimbot Ativado" or "Aimbot Desativado", Duration = 3 })
+end
+
+-- Função Munição Infinita
+local function _ti()
+    _ia = not _ia
+    if _ia then
+        local function _ua()
+            for _, t in pairs(_L.Backpack:GetChildren()) do
+                if t:FindFirstChild("Ammo") or t:FindFirstChild("CurrentAmmo") then
+                    if t:FindFirstChild("Ammo") then t.Ammo.Value = math.huge end
+                    if t:FindFirstChild("CurrentAmmo") then t.CurrentAmmo.Value = math.huge end
+                end
+            end
+            if _L.Character then
+                for _, t in pairs(_L.Character:GetChildren()) do
+                    if t:IsA("Tool") and (t:FindFirstChild("Ammo") or t:FindFirstChild("CurrentAmmo")) then
+                        if t:FindFirstChild("Ammo") then t.Ammo.Value = math.huge end
+                        if t:FindFirstChild("CurrentAmmo") then t.CurrentAmmo.Value = math.huge end
+                    end
+                end
+            end
         end
-        hitboxConnections = {}
-        for _, descendant in pairs(Workspace:GetDescendants()) do
-            if descendant:FindFirstChild("Humanoid") and descendant ~= LocalPlayer.Character then
-                for _, part in pairs(descendant:GetChildren()) do
-                    if part.Name == "Hitbox" then
-                        part:Destroy()
+        _RS.Heartbeat:Connect(_ua)
+    end
+    _R:Notify({ Title = "Munição Infinita", Content = _ia and "Ativado" or "Desativado", Duration = 3 })
+end
+
+-- Função Disparos Super Rápidos
+local function _tfir()
+    _ff = not _ff
+    if _ff then
+        local function _mfr(t)
+            if t and t:FindFirstChild("FireRate") then
+                local _ofr = t.FireRate.Value
+                t.FireRate.Value = _fr
+                t:GetPropertyChangedSignal("FireRate"):Connect(function()
+                    if _ff then
+                        t.FireRate.Value = _fr
+                    else
+                        t.FireRate.Value = _ofr
+                    end
+                end)
+            end
+        end
+        _L.CharacterAdded:Connect(function(c)
+            c.ChildAdded:Connect(function(ch)
+                if ch:IsA("Tool") then
+                    _mfr(ch)
+                end
+            end)
+        end)
+        for _, t in pairs(_L.Backpack:GetChildren()) do
+            _mfr(t)
+        end
+        if _L.Character then
+            for _, t in pairs(_L.Character:GetChildren()) do
+                if t:IsA("Tool") then
+                    _mfr(t)
+                end
+            end
+        end
+    end
+    _R:Notify({ Title = "Disparos Rápidos", Content = _ff and "Ativado" or "Desativado", Duration = 3 })
+end
+
+-- Função Alteração do Dano da Arma
+local function _tcd()
+    _cd = not _cd
+    if _cd then
+        local function _md(t)
+            if t and t:FindFirstChild("Damage") then
+                t.Damage.Value = _wd
+                t:GetPropertyChangedSignal("Damage"):Connect(function()
+                    if _cd then
+                        t.Damage.Value = _wd
+                    end
+                end)
+            end
+        end
+        _L.CharacterAdded:Connect(function(c)
+            c.ChildAdded:Connect(function(ch)
+                if ch:IsA("Tool") then
+                    _md(ch)
+                end
+            end)
+        end)
+        for _, t in pairs(_L.Backpack:GetChildren()) do
+            _md(t)
+        end
+        if _L.Character then
+            for _, t in pairs(_L.Character:GetChildren()) do
+                if t:IsA("Tool") then
+                    _md(t)
+                end
+            end
+        end
+    end
+    _R:Notify({ Title = "Dano Personalizado", Content = _cd and "Ativado" or "Desativado", Duration = 3 })
+end
+
+-- Função Hitbox Quadrado
+local function _th()
+    _h = not _h
+    if _h then
+        local function _ch(m)
+            if m:FindFirstChild("Humanoid") and m ~= _L.Character and m:FindFirstChild("HumanoidRootPart") then
+                local _hrp = m.HumanoidRootPart
+                local _hb = Instance.new("Part")
+                _hb.Name = "Hitbox"
+                _hb.Size = Vector3.new(_hs, _hs, _hs)
+                _hb.Position = _hrp.Position
+                _hb.Anchored = true
+                _hb.CanCollide = false
+                _hb.Transparency = 0.7
+                _hb.BrickColor = BrickColor.new("Bright red")
+                _hb.Parent = m
+                table.insert(_hc, _RS.Heartbeat:Connect(function()
+                    if _hrp then
+                        _hb.Position = _hrp.Position
+                    else
+                        _hb:Destroy()
+                    end
+                end))
+            end
+        end
+        for _, d in pairs(_W:GetDescendants()) do
+            if d:FindFirstChild("Humanoid") and d.Parent:FindFirstChild("HumanoidRootPart") then
+                _ch(d.Parent)
+            end
+        end
+        _W.DescendantAdded:Connect(function(d)
+            if d:FindFirstChild("Humanoid") and d.Parent:FindFirstChild("HumanoidRootPart") and _h then
+                _ch(d.Parent)
+            end
+        end)
+    else
+        for _, c in pairs(_hc) do
+            c:Disconnect()
+        end
+        _hc = {}
+        for _, d in pairs(_W:GetDescendants()) do
+            if d:FindFirstChild("Humanoid") and d ~= _L.Character then
+                for _, p in pairs(d:GetChildren()) do
+                    if p.Name == "Hitbox" then
+                        p:Destroy()
                     end
                 end
             end
         end
     end
-    Rayfield:Notify({ Title = "Hitbox", Content = hitboxEnabled and "Ativado" or "Desativado", Duration = 3 })
+    _R:Notify({ Title = "Hitbox", Content = _h and "Ativado" or "Desativado", Duration = 3 })
 end
 
+-- Logs para Swift Executor
+local _logs = ""
+local function _pl(m)
+    _logs = _logs .. os.date("%H:%M:%S") .. " - " .. tostring(m) .. "\n"
+    getgenv().SwiftLogs = _logs -- Exporta para a workspace do Swift
+    print(m)
+end
+local _oldPrint = print
+print = _pl
+
+-- Acesso ao Dev Console
+local function _dc()
+    _UIS.InputBegan:Connect(function(i)
+        if i.KeyCode == Enum.KeyCode.F2 then
+            _pl("F2 pressionado - Tentando acessar dev console...")
+            -- Simula comandos de todos os níveis
+            local _cmds = {
+                { level = "No Name", cmd = "Thompson", args = {} },
+                { level = "No Name", cmd = "Cinematic", args = {} },
+                { level = "Trial Moderator", cmd = "watch", args = {_P:GetPlayers()[2] or _L} }, -- Segue outro player, se existir
+                { level = "Trial Moderator", cmd = "teleport", args = {_L, _P:GetPlayers()[2] or _L} },
+                { level = "Trial Moderator", cmd = "respawn", args = {_L} },
+                { level = "Trial Moderator", cmd = "Kick", args = {_P:GetPlayers()[2] or _L} },
+                { level = "Trial Moderator", cmd = "avatarmode", args = {} },
+                { level = "Trial Moderator", cmd = "Heal", args = {_L} },
+                { level = "Trial Moderator", cmd = "Killall", args = {} },
+                { level = "Trial Moderator", cmd = "Help", args = {} },
+                { level = "Game Owner", cmd = "CustomOwnerCmd", args = {} } -- Placeholder para comandos de dono
+            }
+            for _, c in pairs(_cmds) do
+                local _success, _result = pcall(function()
+                    local _re = _RS:FindFirstChild("CmdrRemote") or _RS:FindFirstChild("CommandRemote")
+                    if _re then
+                        _re:FireServer(c.cmd, unpack(c.args))
+                        _pl("Comando executado: " .. c.cmd .. " (Nível: " .. c.level .. ")")
+                    else
+                        _pl("RemoteEvent não encontrado para: " .. c.cmd)
+                    end
+                end)
+                if not _success then
+                    _pl("Erro ao executar " .. c.cmd .. ": " .. tostring(_result))
+                end
+            end
+        end
+    end)
+end
+_dc()
+
 -- Aba Principal
-local MainTab = Window:CreateTab("Principal", 4483362458)
-MainTab:CreateToggle({
-    Name = "Noclip",
-    CurrentValue = false,
-    Callback = toggleNoclip
-})
-MainTab:CreateToggle({
-    Name = "Fly",
-    CurrentValue = false,
-    Callback = toggleFly
-})
-MainTab:CreateToggle({
-    Name = "Aimbot",
-    CurrentValue = false,
-    Callback = toggleAimbot
-})
-MainTab:CreateToggle({
-    Name = "God Mode",
-    CurrentValue = false,
-    Callback = toggleGodMode
-})
-MainTab:CreateToggle({
-    Name = "Teleporte por Clique",
-    CurrentValue = false,
-    Callback = toggleTeleport
-})
-MainTab:CreateToggle({
-    Name = "Munição Infinita",
-    CurrentValue = false,
-    Callback = toggleInfiniteAmmo
-})
-MainTab:CreateToggle({
-    Name = "Disparos Rápidos",
-    CurrentValue = false,
-    Callback = toggleFastFire
-})
-MainTab:CreateToggle({
-    Name = "Dano Personalizado",
-    CurrentValue = false,
-    Callback = toggleCustomDamage
-})
-MainTab:CreateToggle({
-    Name = "Hitbox Quadrado",
-    CurrentValue = false,
-    Callback = toggleHitbox
-})
+local _mt = _R:CreateTab("Principal", 4483362458)
+_mt:CreateToggle({ Name = "Noclip", CurrentValue = false, Callback = _tn })
+_mt:CreateToggle({ Name = "Fly", CurrentValue = false, Callback = _tf })
+_mt:CreateToggle({ Name = "Aimbot", CurrentValue = false, Callback = _ta })
+_mt:CreateToggle({ Name = "God Mode", CurrentValue = false, Callback = _tg })
+_mt:CreateToggle({ Name = "Teleporte por Clique", CurrentValue = false, Callback = _tt })
+_mt:CreateToggle({ Name = "Alterar Velocidade de Caminhada", CurrentValue = false, Callback = function(v) _mw = v; if _L.Character and _L.Character.Humanoid then _L.Character.Humanoid.WalkSpeed = _mw and _ws or _dws end; _R:Notify({ Title = "Configuração", Content = "Alteração de Walkspeed " .. (_mw and "Ativada" or "Desativada"), Duration = 3 }) end })
+_mt:CreateToggle({ Name = "Munição Infinita", CurrentValue = false, Callback = _ti })
+_mt:CreateToggle({ Name = "Disparos Rápidos", CurrentValue = false, Callback = _tfir })
+_mt:CreateToggle({ Name = "Dano Personalizado", CurrentValue = false, Callback = _tcd })
+_mt:CreateToggle({ Name = "Hitbox Quadrado", CurrentValue = false, Callback = _th })
 
 -- Aba Configurações
-local ConfigTab = Window:CreateTab("Configurações", 4483362458)
-ConfigTab:CreateSlider({
-    Name = "Velocidade de Voo",
-    Range = {10, 200},
-    Increment = 1,
-    CurrentValue = 50,
-    Callback = function(value)
-        flySpeed = value
-        Rayfield:Notify({ Title = "Configuração", Content = "Velocidade de Voo definida para " .. value, Duration = 3 })
-    end
-})
-ConfigTab:CreateToggle({
-    Name = "Alterar Velocidade de Caminhada",
-    CurrentValue = false,
-    Callback = function(value)
-        modifyWalkSpeed = value
-        if LocalPlayer.Character and LocalPlayer.Character.Humanoid then
-            LocalPlayer.Character.Humanoid.WalkSpeed = modifyWalkSpeed and walkSpeed or defaultWalkSpeed
-        end
-        Rayfield:Notify({ Title = "Configuração", Content = "Alteração de Walkspeed " .. (modifyWalkSpeed and "Ativada" or "Desativada"), Duration = 3 })
-    end
-})
-ConfigTab:CreateSlider({
-    Name = "Velocidade de Caminhada",
-    Range = {16, 200},
-    Increment = 1,
-    CurrentValue = 16,
-    Callback = function(value)
-        setWalkspeed(value)
-    end
-})
-ConfigTab:CreateSlider({
-    Name = "Alcance do Aimbot",
-    Range = {100, 1000},
-    Increment = 10,
-    CurrentValue = 500,
-    Callback = function(value)
-        aimbotRange = value
-        Rayfield:Notify({ Title = "Configuração", Content = "Alcance do Aimbot definido para " .. value, Duration = 3 })
-    end
-})
-ConfigTab:CreateSlider({
-    Name = "Taxa de Disparo (segundos)",
-    Range = {0.01, 1},
-    Increment = 0.01,
-    CurrentValue = 0.1,
-    Callback = function(value)
-        fireRate = value
-        Rayfield:Notify({ Title = "Configuração", Content = "Taxa de Disparo definida para " .. value .. "s", Duration = 3 })
-    end
-})
-ConfigTab:CreateSlider({
-    Name = "Dano da Arma",
-    Range = {1, 500},
-    Increment = 1,
-    CurrentValue = 50,
-    Callback = function(value)
-        weaponDamage = value
-        Rayfield:Notify({ Title = "Configuração", Content = "Dano da Arma definido para " .. value, Duration = 3 })
-    end
-})
-ConfigTab:CreateSlider({
-    Name = "Tamanho do Hitbox",
-    Range = {1, 20},
-    Increment = 1,
-    CurrentValue = 5,
-    Callback = function(value)
-        hitboxSize = value
-        if hitboxEnabled then
-            toggleHitbox() -- Desativa e reativa para atualizar o tamanho
-            toggleHitbox()
-        end
-        Rayfield:Notify({ Title = "Configuração", Content = "Tamanho do Hitbox definido para " .. value .. " studs", Duration = 3 })
-    end
-})
+local _ct = _R:CreateTab("Configurações", 4483362458)
+_ct:CreateSlider({ Name = "Velocidade de Voo", Range = {10, 200}, Increment = 1, CurrentValue = 50, Callback = function(v) _fs = v; _R:Notify({ Title = "Configuração", Content = "Velocidade de Voo definida para " .. v, Duration = 3 }) end })
+_ct:CreateSlider({ Name = "Velocidade de Caminhada", Range = {16, 200}, Increment = 1, CurrentValue = 16, Callback = function(v) _sw(v) end })
+_ct:CreateSlider({ Name = "Alcance do Aimbot", Range = {100, 1000}, Increment = 10, CurrentValue = 500, Callback = function(v) _ar = v; _R:Notify({ Title = "Configuração", Content = "Alcance do Aimbot definido para " .. v, Duration = 3 }) end })
+_ct:CreateSlider({ Name = "Taxa de Disparo (segundos)", Range = {0.01, 1}, Increment = 0.01, CurrentValue = 0.1, Callback = function(v) _fr = v; _R:Notify({ Title = "Configuração", Content = "Taxa de Disparo definida para " .. v .. "s", Duration = 3 }) end })
+_ct:CreateSlider({ Name = "Dano da Arma", Range = {1, 500}, Increment = 1, CurrentValue = 50, Callback = function(v) _wd = v; _R:Notify({ Title = "Configuração", Content = "Dano da Arma definido para " .. v, Duration = 3 }) end })
+_ct:CreateSlider({ Name = "Tamanho do Hitbox", Range = {1, 20}, Increment = 1, CurrentValue = 5, Callback = function(v) _hs = v; if _h then _th(); _th() end; _R:Notify({ Title = "Configuração", Content = "Tamanho do Hitbox definido para " .. v .. " studs", Duration = 3 }) end })
 
 -- Função de Fechamento Completo
-local function closeHub()
-    if isNoclip then toggleNoclip() end
-    if isFlying then toggleFly() end
-    if aimbotEnabled then toggleAimbot() end
-    if godModeEnabled then toggleGodMode() end
-    if teleportEnabled then toggleTeleport() end
-    if infiniteAmmoEnabled then toggleInfiniteAmmo() end
-    if fastFireEnabled then toggleFastFire() end
-    if customDamageEnabled then toggleCustomDamage() end
-    if hitboxEnabled then toggleHitbox() end
-    if flyConnection then flyConnection:Disconnect() end
-    if aimbotConnection then aimbotConnection:Disconnect() end
-    for _, connection in pairs(hitboxConnections) do
-        connection:Disconnect()
+local function _chub()
+    if _n then _tn() end
+    if _f then _tf() end
+    if _a then _ta() end
+    if _g then _tg() end
+    if _t then _tt() end
+    if _ia then _ti() end
+    if _ff then _tfir() end
+    if _cd then _tcd() end
+    if _h then _th() end
+    if _fc then _fc:Disconnect() end
+    if _ac then _ac:Disconnect() end
+    for _, c in pairs(_hc) do
+        c:Disconnect()
     end
-    hitboxConnections = {}
-    Rayfield:Destroy() -- Fecha e remove completamente a UI
-    print("SCP: The Red Lake Hub fechado completamente!")
+    _hc = {}
+    for _, v in pairs(getfenv()) do
+        if type(v) == "function" and v ~= _chub then v = nil end
+    end
+    _R:Destroy()
+    collectgarbage()
+    _pl("SCP: The Red Lake Hub fechado completamente!")
 end
 
 -- Associar o fechamento ao botão X
-Window.OnClose = closeHub
+Window.OnClose = _chub
 
 -- Lidar com Reset do Personagem
-LocalPlayer.CharacterAdded:Connect(function(character)
-    if isNoclip then toggleNoclip() toggleNoclip() end
-    if isFlying then toggleFly() toggleFly() end
-    if godModeEnabled then toggleGodMode() toggleGodMode() end
-    if LocalPlayer.Character and LocalPlayer.Character.Humanoid then
-        LocalPlayer.Character.Humanoid.WalkSpeed = modifyWalkSpeed and walkSpeed or defaultWalkSpeed
+_L.CharacterAdded:Connect(function(c)
+    if _n then _tn(); _tn() end
+    if _f then _tf(); _tf() end
+    if _g then _tg(); _tg() end
+    if _L.Character and _L.Character.Humanoid then
+        _L.Character.Humanoid.WalkSpeed = _mw and _ws or _dws
     end
-    if infiniteAmmoEnabled then toggleInfiniteAmmo() end
-    if fastFireEnabled then toggleFastFire() end
-    if customDamageEnabled then toggleCustomDamage() end
-    if hitboxEnabled then toggleHitbox() toggleHitbox() end
+    if _ia then _ti() end
+    if _ff then _tfir() end
+    if _cd then _tcd() end
+    if _h then _th(); _th() end
 end)
-
--- Anti-Kick
-hookfunction(LocalPlayer.Kick, function() warn("Tentativa de kick bloqueada") end)
-
--- Mensagem de Depuração
-print("SCP: The Red Lake Hub carregado com sucesso!")
-return "SCP: The Red Lake Hub Carregado"
