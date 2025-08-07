@@ -1,5 +1,4 @@
 -- SCP: The Red Lake Hub
--- Script atualizado com correção do erro de loadstring e remoção do código da G18
 
 local success, Rayfield = pcall(function() return loadstring(game:HttpGet('https://sirius.menu/rayfield'))() end)
 if not success then
@@ -232,7 +231,7 @@ local function _ti()
                     end
                 end
             end
-            if _L.Character then
+            if _L.Character and _L.Character:WaitForChild("Humanoid", 1) then
                 for _, t in pairs(_L.Character:GetChildren()) do
                     if t:IsA("Tool") and (t:FindFirstChild("Ammo") or t:FindFirstChild("CurrentAmmo")) then
                         if t:FindFirstChild("Ammo") then t.Ammo.Value = math.huge end
@@ -275,7 +274,7 @@ local function _tfir()
         for _, t in pairs(_L.Backpack:GetChildren()) do
             _mfr(t)
         end
-        if _L.Character then
+        if _L.Character and _L.Character:WaitForChild("Humanoid", 1) then
             for _, t in pairs(_L.Character:GetChildren()) do
                 if t:IsA("Tool") then
                     _mfr(t)
@@ -310,7 +309,7 @@ local function _tcd()
         for _, t in pairs(_L.Backpack:GetChildren()) do
             _md(t)
         end
-        if _L.Character then
+        if _L.Character and _L.Character:WaitForChild("Humanoid", 1) then
             for _, t in pairs(_L.Character:GetChildren()) do
                 if t:IsA("Tool") then
                     _md(t)
@@ -419,4 +418,14 @@ _dc()
 local _mt = _R:CreateTab("Principal", 4483362458)
 _mt:CreateToggle({ Name = "Noclip", CurrentValue = false, Callback = _tn })
 _mt:CreateToggle({ Name = "Fly", CurrentValue = false, Callback = _tf })
-_mt:CreateToggle({ Name = "A
+_mt:CreateToggle({ Name = "Walkspeed", CurrentValue = false, Callback = function() _mw = not _mw; if _L.Character and _L.Character:WaitForChild("Humanoid", 1) then _L.Character.Humanoid.WalkSpeed = _mw and _ws or _dws end; _R:Notify({Title="Walkspeed",Content=_mw and "Ativado" or "Desativado",Duration=3}) end })
+_mt:CreateSlider({ Name = "Velocidade", Range = {16, 100}, Increment = 1, CurrentValue = _ws, Callback = _sw })
+_mt:CreateToggle({ Name = "Teleport", CurrentValue = false, Callback = _tt })
+_mt:CreateToggle({ Name = "God Mode", CurrentValue = false, Callback = _tg })
+_mt:CreateToggle({ Name = "Aimbot", CurrentValue = false, Callback = _ta })
+_mt:CreateToggle({ Name = "Munição Infinita", CurrentValue = false, Callback = _ti })
+_mt:CreateToggle({ Name = "Disparos Rápidos", CurrentValue = false, Callback = _tfir })
+_mt:CreateToggle({ Name = "Dano Personalizado", CurrentValue = false, Callback = _tcd })
+_mt:CreateSlider({ Name = "Dano", Range = {1, 100}, Increment = 1, CurrentValue = _wd, Callback = function(v) _wd = v end })
+_mt:CreateToggle({ Name = "Hitbox", CurrentValue = false, Callback = _th })
+_mt:CreateSlider({ Name = "Tamanho Hitbox", Range = {5, 20}, Increment = 1, CurrentValue = _hs, Callback = function(v) _hs = v end })
