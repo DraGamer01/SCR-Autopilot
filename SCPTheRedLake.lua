@@ -1,6 +1,6 @@
 -- SCP: The Red Lake Hub
 
-local success, Rayfield = pcall(function() return loadstring(readfile("C:\\Users\\SeuUsuario\\Scripts\\rayfield.lua"))() end)
+local success, Rayfield = pcall(function() return loadstring(game:HttpGet('https://sirius.menu/rayfield'))() end)
 if not success then
     warn("Falha ao carregar Rayfield: " .. tostring(Rayfield))
     return
