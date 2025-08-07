@@ -5,10 +5,12 @@ if not success then
     warn("Falha ao carregar Rayfield: " .. tostring(Rayfield))
     return
 elseif Rayfield == nil then
-    warn("Rayfield retornou nil, inicialização abortada")
+    warn("Rayfield retornou nil, inicialização abortada. Verifique o URL: https://sirius.menu/rayfield")
     return
 end
 local _R = Rayfield
+print("Rayfield carregado com sucesso:", typeof(_R))
+
 local _P = game:GetService("Players")
 local _L = _P.LocalPlayer
 local _RS = game:GetService("RunService")
@@ -44,7 +46,7 @@ local _logs = ""
 local function _pl(m)
     local _t = os.date("%H:%M:%S") .. " - " .. tostring(m)
     _logs = _logs .. _t .. "\n"
-    getgenv().SwiftLogs = _logs -- Para acesso na workspace
+    getgenv().SwiftLogs = _logs
     print(_t)
 end
 local _oldPrint = print
@@ -231,7 +233,7 @@ local function _ti()
                     end
                 end
             end
-            if _L.Character and _L.Character:WaitForChild("Humanoid", 1) then
+            if _L.Character then
                 for _, t in pairs(_L.Character:GetChildren()) do
                     if t:IsA("Tool") and (t:FindFirstChild("Ammo") or t:FindFirstChild("CurrentAmmo")) then
                         if t:FindFirstChild("Ammo") then t.Ammo.Value = math.huge end
@@ -243,6 +245,13 @@ local function _ti()
             end
         end
         _RS.Heartbeat:Connect(_ua)
+        _L.CharacterAdded:Connect(function(c)
+            c.ChildAdded:Connect(function(child)
+                if child:IsA("Tool") then
+                    _ua()
+                end
+            end)
+        end)
     end
     _R:Notify({ Title = "Munição Infinita", Content = _ia and "Ativado" or "Desativado", Duration = 3 })
 end
@@ -274,7 +283,7 @@ local function _tfir()
         for _, t in pairs(_L.Backpack:GetChildren()) do
             _mfr(t)
         end
-        if _L.Character and _L.Character:WaitForChild("Humanoid", 1) then
+        if _L.Character then
             for _, t in pairs(_L.Character:GetChildren()) do
                 if t:IsA("Tool") then
                     _mfr(t)
@@ -309,7 +318,7 @@ local function _tcd()
         for _, t in pairs(_L.Backpack:GetChildren()) do
             _md(t)
         end
-        if _L.Character and _L.Character:WaitForChild("Humanoid", 1) then
+        if _L.Character then
             for _, t in pairs(_L.Character:GetChildren()) do
                 if t:IsA("Tool") then
                     _md(t)
