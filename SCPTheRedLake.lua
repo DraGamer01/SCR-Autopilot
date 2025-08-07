@@ -1,15 +1,16 @@
 -- SCP: The Red Lake Hub
 
-local success, Rayfield = pcall(function() return loadstring(game:HttpGet('https://sirius.menu/rayfield'))() end)
+local success, Rayfield = pcall(function() return loadstring(readfile("C:\\Users\\SeuUsuario\\Scripts\\rayfield.lua"))() end)
 if not success then
     warn("Falha ao carregar Rayfield: " .. tostring(Rayfield))
     return
 elseif Rayfield == nil then
-    warn("Rayfield retornou nil, inicialização abortada. Verifique o URL: https://sirius.menu/rayfield")
+    warn("Rayfield retornou nil, inicialização abortada")
     return
 end
 local _R = Rayfield
-print("Rayfield carregado com sucesso:", typeof(_R))
+print("Rayfield carregado:", typeof(_R))
+for k, v in pairs(_R) do print("Chave:", k, "Tipo:", typeof(v)) end
 
 local _P = game:GetService("Players")
 local _L = _P.LocalPlayer
