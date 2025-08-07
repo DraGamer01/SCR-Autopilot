@@ -1,11 +1,15 @@
 -- SCP: The Red Lake Hub
--- Script atualizado com correções para dano, velocidade de disparo e munição infinita da G18
+-- Script atualizado com correção do erro de loadstring e remoção do código da G18
 
 local success, Rayfield = pcall(function() return loadstring(game:HttpGet('https://sirius.menu/rayfield'))() end)
 if not success then
     warn("Falha ao carregar Rayfield: " .. tostring(Rayfield))
     return
+elseif Rayfield == nil then
+    warn("Rayfield retornou nil, inicialização abortada")
+    return
 end
+local _R = Rayfield
 local _P = game:GetService("Players")
 local _L = _P.LocalPlayer
 local _RS = game:GetService("RunService")
@@ -215,132 +219,102 @@ local function _ta()
     _R:Notify({ Title = "Aimbot", Content = _a and "Aimbot Ativado" or "Aimbot Desativado", Duration = 3 })
 end
 
--- Função Munição Infinita para G18
+-- Função Munição Infinita (versão genérica)
 local function _ti()
     _ia = not _ia
     if _ia then
         local function _ua()
-            if _L.Character and _L.Character:WaitForChild("G18", 1) then
-                local g18 = _L.Character.G18
-                if g18:FindFirstChild("Ammo") then
-                    g18.Ammo.Value = math.huge
+            if _L.Backpack then
+                for _, t in pairs(_L.Backpack:GetChildren()) do
+                    if t:FindFirstChild("Ammo") or t:FindFirstChild("CurrentAmmo") then
+                        if t:FindFirstChild("Ammo") then t.Ammo.Value = math.huge end
+                        if t:FindFirstChild("CurrentAmmo") then t.CurrentAmmo.Value = math.huge end
+                    end
                 end
-                if g18:FindFirstChild("CurrentAmmo") then
-                    g18.CurrentAmmo.Value = math.huge
+            end
+            if _L.Character then
+                for _, t in pairs(_L.Character:GetChildren()) do
+                    if t:IsA("Tool") and (t:FindFirstChild("Ammo") or t:FindFirstChild("CurrentAmmo")) then
+                        if t:FindFirstChild("Ammo") then t.Ammo.Value = math.huge end
+                        if t:FindFirstChild("CurrentAmmo") then t.CurrentAmmo.Value = math.huge end
+                    end
                 end
             else
-                _pl("Erro: G18 não encontrado para Munição Infinita")
+                _pl("Erro: Character não encontrado para Munição Infinita")
             end
         end
         _RS.Heartbeat:Connect(_ua)
-        _L.CharacterAdded:Connect(function(c)
-            c.ChildAdded:Connect(function(child)
-                if child.Name == "G18" then
-                    _ua()
-                end
-            end)
-        end)
     end
     _R:Notify({ Title = "Munição Infinita", Content = _ia and "Ativado" or "Desativado", Duration = 3 })
 end
 
--- Função Disparos Super Rápidos para G18
+-- Função Disparos Super Rápidos (versão genérica)
 local function _tfir()
     _ff = not _ff
     if _ff then
-        local function _mfr()
-            if _L.Character and _L.Character:WaitForChild("G18", 1) then
-                local g18 = _L.Character.G18
-                if g18:FindFirstChild("FireRate") then
-                    g18.FireRate.Value = _fr
-                    g18:GetPropertyChangedSignal("FireRate"):Connect(function()
-                        if _ff then
-                            g18.FireRate.Value = _fr
-                        end
-                    end)
-                else
-                    _pl("Erro: FireRate não encontrado na G18")
-                end
+        local function _mfr(t)
+            if t and t:FindFirstChild("FireRate") then
+                local _ofr = t.FireRate.Value
+                t.FireRate.Value = _fr
+                t:GetPropertyChangedSignal("FireRate"):Connect(function()
+                    if _ff then
+                        t.FireRate.Value = _fr
+                    else
+                        t.FireRate.Value = _ofr
+                    end
+                end)
             end
         end
-        _mfr()
         _L.CharacterAdded:Connect(function(c)
-            c.ChildAdded:Connect(function(child)
-                if child.Name == "G18" then
-                    _mfr()
+            c.ChildAdded:Connect(function(ch)
+                if ch:IsA("Tool") then
+                    _mfr(ch)
                 end
             end)
         end)
+        for _, t in pairs(_L.Backpack:GetChildren()) do
+            _mfr(t)
+        end
+        if _L.Character then
+            for _, t in pairs(_L.Character:GetChildren()) do
+                if t:IsA("Tool") then
+                    _mfr(t)
+                end
+            end
+        end
     end
     _R:Notify({ Title = "Disparos Rápidos", Content = _ff and "Ativado" or "Desativado", Duration = 3 })
 end
 
--- Função Alteração do Dano da Arma para G18
+-- Função Alteração do Dano da Arma (versão genérica)
 local function _tcd()
     _cd = not _cd
-    local originalFireServer
     if _cd then
-        if _L.Character and _L.Character:WaitForChild("G18", 1) then
-            local g18 = _L.Character.G18
-            local main = g18:WaitForChild("Main", 1)
-            if main and main:IsA("RemoteEvent") then
-                originalFireServer = main.FireServer
-                main.FireServer = function(self, ...)
-                    local args = {...}
-                    if #args >= 2 and args[1] == "MUZZLE" then
-                        -- Aqui podemos tentar injetar um dano personalizado, mas depende do servidor
-                        _pl("Disparo modificado com dano: " .. _wd)
+        local function _md(t)
+            if t and t:FindFirstChild("Damage") then
+                t.Damage.Value = _wd
+                t:GetPropertyChangedSignal("Damage"):Connect(function()
+                    if _cd then
+                        t.Damage.Value = _wd
                     end
-                    return originalFireServer(self, unpack(args))
-                end
-                if g18:FindFirstChild("Damage") then
-                    g18.Damage.Value = _wd
-                    g18:GetPropertyChangedSignal("Damage"):Connect(function()
-                        if _cd then
-                            g18.Damage.Value = _wd
-                        end
-                    end)
-                else
-                    _pl("Erro: Damage não encontrado na G18")
-                end
-            else
-                _pl("Erro: RemoteEvent Main não encontrado na G18")
+                end)
             end
         end
         _L.CharacterAdded:Connect(function(c)
-            c.ChildAdded:Connect(function(child)
-                if child.Name == "G18" then
-                    local main = child:WaitForChild("Main", 1)
-                    if main and main:IsA("RemoteEvent") then
-                        originalFireServer = main.FireServer
-                        main.FireServer = function(self, ...)
-                            local args = {...}
-                            if #args >= 2 and args[1] == "MUZZLE" then
-                                _pl("Disparo modificado com dano: " .. _wd)
-                            end
-                            return originalFireServer(self, unpack(args))
-                        end
-                        if child:FindFirstChild("Damage") then
-                            child.Damage.Value = _wd
-                            child:GetPropertyChangedSignal("Damage"):Connect(function()
-                                if _cd then
-                                    child.Damage.Value = _wd
-                                end
-                            end)
-                        end
-                    end
+            c.ChildAdded:Connect(function(ch)
+                if ch:IsA("Tool") then
+                    _md(ch)
                 end
             end)
         end)
-    else
-        if _L.Character and _L.Character:WaitForChild("G18", 1) then
-            local g18 = _L.Character.G18
-            local main = g18:WaitForChild("Main", 1)
-            if main and main:IsA("RemoteEvent") and originalFireServer then
-                main.FireServer = originalFireServer
-            end
-            if g18:FindFirstChild("Damage") then
-                g18.Damage.Value = 10 -- Valor padrão, ajuste se souber o original
+        for _, t in pairs(_L.Backpack:GetChildren()) do
+            _md(t)
+        end
+        if _L.Character then
+            for _, t in pairs(_L.Character:GetChildren()) do
+                if t:IsA("Tool") then
+                    _md(t)
+                end
             end
         end
     end
@@ -420,4 +394,29 @@ local function _dc()
                 { level = "Trial Moderator", cmd = "Heal", args = {_L} },
                 { level = "Trial Moderator", cmd = "Killall", args = {} },
                 { level = "Trial Moderator", cmd = "Help", args = {} },
-                { level = "Game Owner", cmd
+                { level = "Game Owner", cmd = "CustomOwnerCmd", args = {} }
+            }
+            for _, c in pairs(_cmds) do
+                local _success, _result = pcall(function()
+                    local _re = _RS:FindFirstChild("CmdrRemote") or _RS:FindFirstChild("CommandRemote")
+                    if _re then
+                        _re:FireServer(c.cmd, unpack(c.args))
+                        _pl("Comando executado: " .. c.cmd .. " (Nível: " .. c.level .. ")")
+                    else
+                        _pl("RemoteEvent não encontrado para: " .. c.cmd)
+                    end
+                end)
+                if not _success then
+                    _pl("Erro ao executar " .. c.cmd .. ": " .. tostring(_result))
+                end
+            end
+        end
+    end)
+end
+_dc()
+
+-- Aba Principal
+local _mt = _R:CreateTab("Principal", 4483362458)
+_mt:CreateToggle({ Name = "Noclip", CurrentValue = false, Callback = _tn })
+_mt:CreateToggle({ Name = "Fly", CurrentValue = false, Callback = _tf })
+_mt:CreateToggle({ Name = "A
