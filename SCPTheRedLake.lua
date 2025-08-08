@@ -25,7 +25,7 @@ local flySpeed = 50
 local walkSpeed = 16
 local teleportEnabled = false
 local flyConnection
-local hubTransparency = 0 -- Variável pra controlar a transparência
+local hubTransparency = 0
 
 -- Função Noclip
 local function toggleNoclip()
@@ -146,14 +146,45 @@ MainTab:CreateToggle({
 
 -- Aba Configurações
 local ConfigTab = Window:CreateTab("Configurações", 4483362458)
+local flySpeedInput = ConfigTab:CreateInput({
+    Name = "Velocidade de Voo (Valor)",
+    PlaceholderText = "Insira valor",
+    RemoveTextAfterFocusLost = false,
+    Callback = function(text)
+        local value = tonumber(text)
+        if value and value >= 10 and value <= 1000 then
+            flySpeed = value
+            if Window and Window:FindFirstChild("FlySpeedSlider") then
+                Window.FlySpeedSlider:Set(value)
+            end
+            Rayfield:Notify({ Title = "Configuração", Content = "Velocidade de Voo definida para " .. value, Duration = 3 })
+        end
+    end
+})
 ConfigTab:CreateSlider({
     Name = "Velocidade de Voo",
-    Range = {10, 200},
+    Range = {10, 1000},
     Increment = 1,
     CurrentValue = 50,
+    Flag = "FlySpeedSlider",
     Callback = function(value)
         flySpeed = value
+        flySpeedInput:Set(tostring(value))
         Rayfield:Notify({ Title = "Configuração", Content = "Velocidade de Voo definida para " .. value, Duration = 3 })
+    end
+})
+local walkSpeedInput = ConfigTab:CreateInput({
+    Name = "Velocidade de Caminhada (Valor)",
+    PlaceholderText = "Insira valor",
+    RemoveTextAfterFocusLost = false,
+    Callback = function(text)
+        local value = tonumber(text)
+        if value and value >= 16 and value <= 200 then
+            walkSpeed = value
+            if Window and Window:FindFirstChild("WalkSpeedSlider") then
+                Window.WalkSpeedSlider:Set(value)
+            end
+        end
     end
 })
 ConfigTab:CreateSlider({
@@ -161,39 +192,118 @@ ConfigTab:CreateSlider({
     Range = {16, 200},
     Increment = 1,
     CurrentValue = 16,
+    Flag = "WalkSpeedSlider",
     Callback = function() end
+})
+local aimbotRangeInput = ConfigTab:CreateInput({
+    Name = "Alcance do Aimbot (Valor)",
+    PlaceholderText = "Insira valor",
+    RemoveTextAfterFocusLost = false,
+    Callback = function(text)
+        local value = tonumber(text)
+        if value and value >= 100 and value <= 1000 then
+            aimbotRange = value
+            if Window and Window:FindFirstChild("AimbotRangeSlider") then
+                Window.AimbotRangeSlider:Set(value)
+            end
+        end
+    end
 })
 ConfigTab:CreateSlider({
     Name = "Alcance do Aimbot",
     Range = {100, 1000},
     Increment = 10,
     CurrentValue = 500,
+    Flag = "AimbotRangeSlider",
     Callback = function() end
+})
+local hitboxSizeInput = ConfigTab:CreateInput({
+    Name = "Tamanho da Hitbox (Valor)",
+    PlaceholderText = "Insira valor",
+    RemoveTextAfterFocusLost = false,
+    Callback = function(text)
+        local value = tonumber(text)
+        if value and value >= 5 and value <= 20 then
+            if Window and Window:FindFirstChild("HitboxSizeSlider") then
+                Window.HitboxSizeSlider:Set(value)
+            end
+        end
+    end
 })
 ConfigTab:CreateSlider({
     Name = "Tamanho da Hitbox",
     Range = {5, 20},
     Increment = 1,
     CurrentValue = 5,
+    Flag = "HitboxSizeSlider",
     Callback = function() end
+})
+local damageInput = ConfigTab:CreateInput({
+    Name = "Dano (Valor)",
+    PlaceholderText = "Insira valor",
+    RemoveTextAfterFocusLost = false,
+    Callback = function(text)
+        local value = tonumber(text)
+        if value and value >= 1 and value <= 100 then
+            if Window and Window:FindFirstChild("DamageSlider") then
+                Window.DamageSlider:Set(value)
+            end
+        end
+    end
 })
 ConfigTab:CreateSlider({
     Name = "Dano",
     Range = {1, 100},
     Increment = 1,
     CurrentValue = 50,
+    Flag = "DamageSlider",
     Callback = function() end
+})
+local fireRateInput = ConfigTab:CreateInput({
+    Name = "Taxa de Disparo (Valor)",
+    PlaceholderText = "Insira valor",
+    RemoveTextAfterFocusLost = false,
+    Callback = function(text)
+        local value = tonumber(text)
+        if value and value >= 0.1 and value <= 1 then
+            if Window and Window:FindFirstChild("FireRateSlider") then
+                Window.FireRateSlider:Set(value)
+            end
+        end
+    end
 })
 ConfigTab:CreateSlider({
     Name = "Taxa de Disparo",
     Range = {0.1, 1},
     Increment = 0.1,
     CurrentValue = 0.1,
+    Flag = "FireRateSlider",
     Callback = function() end
 })
 
 -- Aba Config do Hub
 local HubConfigTab = Window:CreateTab("Config do Hub", 4483362458)
+local transparencyInput = HubConfigTab:CreateInput({
+    Name = "Transparência do Hub (Valor)",
+    PlaceholderText = "Insira valor",
+    RemoveTextAfterFocusLost = false,
+    Callback = function(text)
+        local value = tonumber(text)
+        if value and value >= 0 and value <= 1 then
+            hubTransparency = value
+            if Window and Window.Main then
+                Window.Main.BackgroundTransparency = value
+                for _, element in pairs(Window.Main:GetChildren()) do
+                    if element:IsA("GuiObject") then
+                        element.BackgroundTransparency = value
+                    end
+                end
+                transparencyInput:Set(tostring(value))
+            end
+            Rayfield:Notify({ Title = "Configuração", Content = "Transparência do Hub definida para " .. value, Duration = 3 })
+        end
+    end
+})
 HubConfigTab:CreateSlider({
     Name = "Transparência do Hub",
     Range = {0, 1},
@@ -208,6 +318,7 @@ HubConfigTab:CreateSlider({
                     element.BackgroundTransparency = value
                 end
             end
+            transparencyInput:Set(tostring(value))
         end
         Rayfield:Notify({ Title = "Configuração", Content = "Transparência do Hub definida para " .. value, Duration = 3 })
     end
@@ -215,12 +326,13 @@ HubConfigTab:CreateSlider({
 HubConfigTab:CreateButton({
     Name = "Encerrar Script",
     Callback = function()
-        -- Encerra todas as conexões e limpa o script
         if flyConnection then flyConnection:Disconnect() end
         RunService:UnbindFromRenderStep("Noclip")
-        if Window then Window:Destroy() end
-        getgenv().SCPTheRedLakeHub = nil
-        print("SCP: The Red Lake Hub encerrado completamente!")
+        if Window then
+            Window:Destroy()
+            getgenv().SCPTheRedLakeHub = nil
+            print("SCP: The Red Lake Hub encerrado completamente!")
+        end
     end
 })
 
