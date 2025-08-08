@@ -1,7 +1,7 @@
 -- SCP: The Red Lake Hub
 -- Script atualizado com UI aprimorada, aba de configurações
 
-local Rayfield = loadstring(game:HttpGet('https://raw.githubusercontent.com/DraGamer01/Scripts/main/Rayfield_mod.lua'))()
+local Rayfield = loadstring(game:HttpGet('https://raw.githubusercontent.com/DraGamer01/Scripts/refs/heads/main/Rayfield_mod.lua'))()
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local RunService = game:GetService("RunService")
@@ -23,12 +23,9 @@ local isNoclip = false
 local isFlying = false
 local flySpeed = 50
 local walkSpeed = 16
-local aimbotEnabled = false
-local aimbotRange = 500
 local teleportEnabled = false
-local godModeEnabled = false
 local flyConnection
-local aimbotConnection
+local hubTransparency = 0 -- Variável pra controlar a transparência
 
 -- Função Noclip
 local function toggleNoclip()
@@ -77,72 +74,6 @@ local function toggleFly()
     Rayfield:Notify({ Title = "Fly", Content = isFlying and "Fly Ativado" or "Fly Desativado", Duration = 3 })
 end
 
--- Função Walkspeed
-local function setWalkspeed(speed)
-    walkSpeed = speed
-    if LocalPlayer.Character and LocalPlayer.Character.Humanoid then
-        LocalPlayer.Character.Humanoid.WalkSpeed = speed
-    end
-    LocalPlayer.CharacterAdded:Connect(function(character)
-        character:WaitForChild("Humanoid").WalkSpeed = walkSpeed
-    end)
-    Rayfield:Notify({ Title = "Walkspeed", Content = "Velocidade definida para " .. speed, Duration = 3 })
-end
-
--- Função Aimbot
-local function getClosestEnemy()
-    local closestEnemy = nil
-    local closestDistance = math.huge
-    for _, player in pairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer and player.Character and player.Character.Humanoid and player.Character.Humanoid.Health > 0 then
-            local distance = (player.Character.HumanoidRootPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
-            if distance < closestDistance and distance < aimbotRange then
-                closestEnemy = player.Character
-                closestDistance = distance
-            end
-        end
-    end
-    return closestEnemy
-end
-
-local function toggleAimbot()
-    aimbotEnabled = not aimbotEnabled
-    if aimbotEnabled then
-        aimbotConnection = RunService.RenderStepped:Connect(function()
-            if LocalPlayer.Character and LocalPlayer.Character.HumanoidRootPart then
-                local enemy = getClosestEnemy()
-                if enemy and enemy.HumanoidRootPart then
-                    Camera.CFrame = CFrame.new(Camera.CFrame.Position, enemy.HumanoidRootPart.Position)
-                end
-            end
-        end)
-    else
-        if aimbotConnection then aimbotConnection:Disconnect() end
-    end
-    Rayfield:Notify({ Title = "Aimbot", Content = aimbotEnabled and "Aimbot Ativado" or "Aimbot Desativado", Duration = 3 })
-end
-
--- Função God Mode
-local function toggleGodMode()
-    godModeEnabled = not godModeEnabled
-    if godModeEnabled then
-        if LocalPlayer.Character and LocalPlayer.Character.Humanoid then
-            LocalPlayer.Character.Humanoid.MaxHealth = math.huge
-            LocalPlayer.Character.Humanoid.Health = math.huge
-        end
-        LocalPlayer.CharacterAdded:Connect(function(character)
-            character:WaitForChild("Humanoid").MaxHealth = math.huge
-            character:WaitForChild("Humanoid").Health = math.huge
-        end)
-    else
-        if LocalPlayer.Character and LocalPlayer.Character.Humanoid then
-            LocalPlayer.Character.Humanoid.MaxHealth = 100
-            LocalPlayer.Character.Humanoid.Health = 100
-        end
-    end
-    Rayfield:Notify({ Title = "God Mode", Content = godModeEnabled and "God Mode Ativado" or "God Mode Desativado", Duration = 3 })
-end
-
 -- Função Teleport
 local function toggleTeleport()
     teleportEnabled = not teleportEnabled
@@ -173,19 +104,44 @@ MainTab:CreateToggle({
     Callback = toggleFly
 })
 MainTab:CreateToggle({
+    Name = "Teleporte por Clique",
+    CurrentValue = false,
+    Callback = toggleTeleport
+})
+MainTab:CreateToggle({
+    Name = "Munição Infinita",
+    CurrentValue = false,
+    Callback = function() end
+})
+MainTab:CreateToggle({
+    Name = "Ativar Walkspeed",
+    CurrentValue = false,
+    Callback = function() end
+})
+MainTab:CreateToggle({
+    Name = "Hitbox",
+    CurrentValue = false,
+    Callback = function() end
+})
+MainTab:CreateToggle({
+    Name = "Disparos Rápidos",
+    CurrentValue = false,
+    Callback = function() end
+})
+MainTab:CreateToggle({
+    Name = "Dano Personalizado",
+    CurrentValue = false,
+    Callback = function() end
+})
+MainTab:CreateToggle({
     Name = "Aimbot",
     CurrentValue = false,
-    Callback = toggleAimbot
+    Callback = function() end
 })
 MainTab:CreateToggle({
     Name = "God Mode",
     CurrentValue = false,
-    Callback = toggleGodMode
-})
-MainTab:CreateToggle({
-    Name = "Teleporte por Clique",
-    CurrentValue = false,
-    Callback = toggleTeleport
+    Callback = function() end
 })
 
 -- Aba Configurações
@@ -205,18 +161,66 @@ ConfigTab:CreateSlider({
     Range = {16, 200},
     Increment = 1,
     CurrentValue = 16,
-    Callback = function(value)
-        setWalkspeed(value)
-    end
+    Callback = function() end
 })
 ConfigTab:CreateSlider({
     Name = "Alcance do Aimbot",
     Range = {100, 1000},
     Increment = 10,
     CurrentValue = 500,
+    Callback = function() end
+})
+ConfigTab:CreateSlider({
+    Name = "Tamanho da Hitbox",
+    Range = {5, 20},
+    Increment = 1,
+    CurrentValue = 5,
+    Callback = function() end
+})
+ConfigTab:CreateSlider({
+    Name = "Dano",
+    Range = {1, 100},
+    Increment = 1,
+    CurrentValue = 50,
+    Callback = function() end
+})
+ConfigTab:CreateSlider({
+    Name = "Taxa de Disparo",
+    Range = {0.1, 1},
+    Increment = 0.1,
+    CurrentValue = 0.1,
+    Callback = function() end
+})
+
+-- Aba Config do Hub
+local HubConfigTab = Window:CreateTab("Config do Hub", 4483362458)
+HubConfigTab:CreateSlider({
+    Name = "Transparência do Hub",
+    Range = {0, 1},
+    Increment = 0.1,
+    CurrentValue = 0,
     Callback = function(value)
-        aimbotRange = value
-        Rayfield:Notify({ Title = "Configuração", Content = "Alcance do Aimbot definido para " .. value, Duration = 3 })
+        hubTransparency = value
+        if Window and Window.Main then
+            Window.Main.BackgroundTransparency = value
+            for _, element in pairs(Window.Main:GetChildren()) do
+                if element:IsA("GuiObject") then
+                    element.BackgroundTransparency = value
+                end
+            end
+        end
+        Rayfield:Notify({ Title = "Configuração", Content = "Transparência do Hub definida para " .. value, Duration = 3 })
+    end
+})
+HubConfigTab:CreateButton({
+    Name = "Encerrar Script",
+    Callback = function()
+        -- Encerra todas as conexões e limpa o script
+        if flyConnection then flyConnection:Disconnect() end
+        RunService:UnbindFromRenderStep("Noclip")
+        if Window then Window:Destroy() end
+        getgenv().SCPTheRedLakeHub = nil
+        print("SCP: The Red Lake Hub encerrado completamente!")
     end
 })
 
@@ -224,7 +228,6 @@ ConfigTab:CreateSlider({
 LocalPlayer.CharacterAdded:Connect(function(character)
     if isNoclip then toggleNoclip() toggleNoclip() end
     if isFlying then toggleFly() toggleFly() end
-    if godModeEnabled then toggleGodMode() toggleGodMode() end
 end)
 
 -- Anti-Kick
