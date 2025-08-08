@@ -346,6 +346,33 @@ ConfigTab:CreateSlider({
 
 -- Aba Config do Hub
 local HubConfigTab = Window:CreateTab("Config do Hub", 4483362458)
+local transparencyInput = HubConfigTab:CreateInput({
+    Name = "Transparência do Hub (Valor)",
+    PlaceholderText = "Insira valor (0-1)",
+    RemoveTextAfterFocusLost = false,
+    Callback = function(text)
+        local value = tonumber(text)
+        if value and value >= 0 and value <= 1 then
+            Rayfield:SetTransparency(value)
+            HubConfigTab:FindFirstChild("TransparencySlider"):Set(value)
+            Rayfield:Notify({ Title = "Configuração", Content = "Transparência do Hub definida para " .. value, Duration = 3 })
+        else
+            Rayfield:Notify({ Title = "Erro", Content = "Insira um valor válido entre 0 e 1.", Duration = 3 })
+        end
+    end
+})
+HubConfigTab:CreateSlider({
+    Name = "Transparência do Hub",
+    Range = {0, 1},
+    Increment = 0.1,
+    CurrentValue = 0.5,
+    Flag = "TransparencySlider",
+    Callback = function(value)
+        Rayfield:SetTransparency(value)
+        transparencyInput:Set(tostring(value))
+        Rayfield:Notify({ Title = "Configuração", Content = "Transparência do Hub definida para " .. value, Duration = 3 })
+    end
+})
 HubConfigTab:CreateButton({
     Name = "Encerrar Script",
     Callback = function()
