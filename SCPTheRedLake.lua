@@ -401,19 +401,53 @@ HubConfigTab:CreateButton({
         if isNoclip then toggleNoclip() end
         if isFlying then toggleFly() end
         if teleportEnabled then toggleTeleport() end
-        -- Desconecta todas as conexões
-        for _, connection in pairs(getgenv().Connections or {}) do
-            pcall(function() connection:Disconnect() end)
+
+        -- Desconecta todas as conexões registradas
+        if getgenv().Connections then
+            for _, connection in pairs(getgenv().Connections) do
+                pcall(function() connection:Disconnect() end)
+            end
+            getgenv().Connections = nil
         end
-        getgenv().Connections = nil
-        -- Destrói a interface
+
+        -- Remove objetos criados (ex.: BodyVelocity do Fly)
+        if LocalPlayer.Character then
+            local humanoidRootPart = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+            if humanoidRootPart then
+                local bodyVelocity = humanoidRootPart:FindFirstChild("BodyVelocity")
+                if bodyVelocity then bodyVelocity:Destroy() end
+            end
+        end
+
+        -- Destrói a interface Rayfield
         if Window then
             Rayfield:Destroy()
+            Window = nil
         end
-        -- Limpa variáveis globais
+
+        -- Limpa todas as variáveis globais
         getgenv().SCPTheRedLakeHub = nil
-        Rayfield:Notify({ Title = "Script Encerrado", Content = "O script foi completamente encerrado.", Duration = 3 })
-        print("SCP: The Red Lake Hub encerrado completamente!")
+        isNoclip = nil
+        isFlying = nil
+        flySpeed = nil
+        walkSpeed = nil
+        teleportEnabled = nil
+        aimbotRange = nil
+        hitboxSize = nil
+        damage = nil
+        fireRate = nil
+        flyConnection = nil
+        teleportConnection = nil
+
+        -- Força a limpeza de serviços e memória
+        for _, service in pairs(game:GetService("RunService"):GetConnections()) do
+            pcall(function() service:Disconnect() end)
+        end
+        collectgarbage("collect") -- Libera memória não utilizada
+
+        -- Notificação e mensagem final
+        Rayfield:Notify({ Title = "Script Encerrado", Content = "O script foi completamente encerrado e removido.", Duration = 3 })
+        print("SCP: The Red Lake Hub encerrado completamente e removido da memória!")
     end
 })
 
