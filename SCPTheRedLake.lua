@@ -1,7 +1,7 @@
 -- SCP: The Red Lake Hub
 -- Script atualizado com UI aprimorada, aba de configurações
 
-local Rayfield = loadstring(game:HttpGet('https://raw.githubusercontent.com/DraGamer01/Scripts/main/Rayfield_mod.lua'))()
+local Rayfield = loadstring(game:HttpGet('https://raw.githubusercontent.com/DraGamer01/Scripts/refs/heads/main/Rayfield_mod.lua'))()
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local RunService = game:GetService("RunService")
