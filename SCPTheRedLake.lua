@@ -18,6 +18,27 @@ local Window = Rayfield:CreateWindow({
     ConfigurationSaving = { Enabled = true, FolderName = "SCPRedLakeHub", FileName = "Config" }
 })
 
+-- Funções para controlar a transparência da UI
+local function applyTransparency(value)
+    if Window and Window.Main then
+        Window.Main.BackgroundTransparency = value
+        for _, element in pairs(Window.Main:GetChildren()) do
+            if element:IsA("GuiObject") and element.Name ~= "Topbar" then
+                element.BackgroundTransparency = value
+            end
+        end
+        if Window.Main:FindFirstChild("Topbar") then
+            Window.Main.Topbar.BackgroundTransparency = value * 0.6 -- Ajusta a transparência da Topbar
+        end
+    end
+end
+
+local function setTransparency(value)
+    if value >= 0 and value <= 1 then
+        applyTransparency(value)
+    end
+end
+
 -- Variáveis
 local isNoclip = false
 local isFlying = false
@@ -353,7 +374,7 @@ local transparencyInput = HubConfigTab:CreateInput({
     Callback = function(text)
         local value = tonumber(text)
         if value and value >= 0 and value <= 1 then
-            Rayfield:SetTransparency(value)
+            setTransparency(value)
             HubConfigTab:FindFirstChild("TransparencySlider"):Set(value)
             Rayfield:Notify({ Title = "Configuração", Content = "Transparência do Hub definida para " .. value, Duration = 3 })
         else
@@ -368,7 +389,7 @@ HubConfigTab:CreateSlider({
     CurrentValue = 0.5,
     Flag = "TransparencySlider",
     Callback = function(value)
-        Rayfield:SetTransparency(value)
+        setTransparency(value)
         transparencyInput:Set(tostring(value))
         Rayfield:Notify({ Title = "Configuração", Content = "Transparência do Hub definida para " .. value, Duration = 3 })
     end
