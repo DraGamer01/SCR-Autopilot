@@ -57,6 +57,71 @@ local flyConnection
 local teleportConnection
 getgenv().Connections = getgenv().Connections or {}
 
+-- Função ESP
+local espColor = Color3.fromRGB(255, 0, 0) -- Cor padrão
+local espEnabled = false
+local function toggleESP()
+    espEnabled = not espEnabled
+    if espEnabled then
+        table.insert(getgenv().Connections, RunService.RenderStepped:Connect(function()
+            for _, player in pairs(Players:GetPlayers()) do
+                if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                    local box = Instance.new("BoxHandleAdornment")
+                    box.Size = player.Character.HumanoidRootPart.Size * 1.2
+                    box.AdornCFrame = player.Character.HumanoidRootPart.CFrame
+                    box.Color3 = espColor
+                    box.Transparency = 0.5
+                    box.AlwaysOnTop = true
+                    box.Parent = Workspace.CurrentCamera
+                end
+            end
+            -- Para NPCs (assumindo que NPCs estão em Workspace.NPCs)
+            for _, npc in pairs(Workspace:FindFirstChild("NPCs"):GetChildren()) do
+                if npc:FindFirstChild("HumanoidRootPart") then
+                    local box = Instance.new("BoxHandleAdornment")
+                    box.Size = npc.HumanoidRootPart.Size * 1.2
+                    box.AdornCFrame = npc.HumanoidRootPart.CFrame
+                    box.Color3 = espColor
+                    box.Transparency = 0.5
+                    box.AlwaysOnTop = true
+                    box.Parent = Workspace.CurrentCamera
+                end
+            end
+        end))
+    end
+    Rayfield:Notify({ Title = "ESP", Content = espEnabled and "ESP Ativado" or "ESP Desativado", Duration = 3 })
+end
+
+local function setESPColor(r, g, b)
+    espColor = Color3.fromRGB(r, g, b)
+    Rayfield:Notify({ Title = "ESP", Content = "Cor do ESP definida para RGB(" .. r .. ", " .. g .. ", " .. b .. ")", Duration = 3 })
+end
+
+-- Código do Aimbot (apenas o código, integrado ao toggle)
+local aimbotEnabled = false
+local function toggleAimbot()
+    aimbotEnabled = not aimbotEnabled
+    if aimbotEnabled then
+        table.insert(getgenv().Connections, RunService.RenderStepped:Connect(function()
+            local closestPlayer = nil
+            local closestDistance = math.huge
+            for _, player in pairs(Players:GetPlayers()) do
+                if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("Head") then
+                    local distance = (player.Character.Head.Position - LocalPlayer.Character.Head.Position).Magnitude
+                    if distance < closestDistance then
+                        closestDistance = distance
+                        closestPlayer = player
+                    end
+                end
+            end
+            if closestPlayer then
+                Camera.CFrame = CFrame.lookAt(Camera.CFrame.Position, closestPlayer.Character.Head.Position)
+            end
+        end))
+    end
+    Rayfield:Notify({ Title = "Aimbot", Content = aimbotEnabled and "Aimbot Ativado" or "Aimbot Desativado", Duration = 3 })
+end
+
 -- Função Noclip
 local function toggleNoclip()
     isNoclip = not isNoclip
@@ -125,22 +190,68 @@ local function toggleTeleport()
     Rayfield:Notify({ Title = "Teleporte", Content = teleportEnabled and "Teleporte por Clique Ativado" or "Teleporte por Clique Desativado", Duration = 3 })
 end
 
--- Função Hack de Gamepasses (Experimental)
-local function unlockGamepasses()
-    local success, err = pcall(function()
-        local MarketplaceService = game:GetService("MarketplaceService")
-        local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
-        -- Simula a compra de gamepasses alterando valores locais (não garantido contra detecção)
-        for _, gamepass in pairs(Database.Gamepasses) do
-            local productId = gamepass.ProductId or 0 -- Substituir com IDs reais se disponíveis
-            if productId > 0 then
-                MarketplaceService:PromptGamePassPurchase(LocalPlayer, productId)
-                Rayfield:Notify({ Title = "Hack", Content = "Tentando desbloquear " .. gamepass.Name, Duration = 3 })
-            end
+-- Função para Equipar Operative
+local function equipOperative(value)
+    local op = Database.Operatives[value]
+    if op then
+        -- Simular efeitos (ex.: alterar HP, speed)
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+            LocalPlayer.Character.Humanoid.Health = LocalPlayer.Character.Humanoid.MaxHealth + op.mastery.Health or 0
+            LocalPlayer.Character.Humanoid.WalkSpeed = LocalPlayer.Character.Humanoid.WalkSpeed + op.mastery.WalkSpeed or 0
         end
-    end)
-    if not success then
-        Rayfield:Notify({ Title = "Erro", Content = "Falha ao desbloquear gamepasses. Pode ser detectado!", Duration = 5 })
+        Rayfield:Notify({ Title = "Operative", Content = "Equipado: " .. op.Name .. " (Perks: " .. table.concat(op.perks, ", ") .. ")", Duration = 3 })
+    end
+end
+
+-- Função para Equipar Arma
+local function equipWeapon(value)
+    local weapon = Database.Weapons[value]
+    if weapon then
+        -- Simular equipar (ex.: alterar dano ou ammo local)
+        damage = weapon.damage or damage
+        fireRate = weapon.fire_rate or fireRate
+        Rayfield:Notify({ Title = "Arma", Content = "Equipada: " .. weapon.Name .. " (Dano: " .. weapon.damage .. ")", Duration = 3 })
+    end
+end
+
+-- Função para Usar Item
+local function useItem(value)
+    local item = Database.Items[value]
+    if item then
+        -- Simular efeito (ex.: heal)
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+            LocalPlayer.Character.Humanoid.Health = LocalPlayer.Character.Humanoid.Health + (item.effect:find("Heal") and 50 or 0)
+        end
+        Rayfield:Notify({ Title = "Item", Content = "Usado: " .. item.Name .. " (Efeito: " .. item.effect .. ")", Duration = 3 })
+    end
+end
+
+-- Função para Construir Building
+local function buildBuilding(value)
+    local building = Database.Buildings[value]
+    if building then
+        -- Simular construção (ex.: spawn object, se possível)
+        local newBuilding = Instance.new("Part")
+        newBuilding.Name = building.Name
+        newBuilding.Parent = Workspace
+        Rayfield:Notify({ Title = "Construção", Content = "Construído: " .. building.Name .. " (Efeito: " .. building.effect .. ")", Duration = 3 })
+    end
+end
+
+-- Função para Desbloquear Gamepass
+local function unlockGamepass(value)
+    local gamepass = Database.Gamepasses[value]
+    if gamepass then
+        -- Hack: Spoof UserOwnsGamePassAsync
+        local MarketplaceService = game:GetService("MarketplaceService")
+        getgenv().oldUserOwnsGamePassAsync = MarketplaceService.UserOwnsGamePassAsync
+        MarketplaceService.UserOwnsGamePassAsync = function(self, userId, passId)
+            if passId == gamepass.id then
+                return true
+            end
+            return getgenv().oldUserOwnsGamePassAsync(self, userId, passId)
+        end
+        Rayfield:Notify({ Title = "Gamepass", Content = "Desbloqueado: " .. gamepass.Name .. " (Efeito: " .. gamepass.effect .. ")", Duration = 3 })
     end
 end
 
@@ -154,109 +265,9 @@ MainTab:CreateToggle({ Name = "Ativar Walkspeed", CurrentValue = false, Callback
 MainTab:CreateToggle({ Name = "Hitbox", CurrentValue = false, Callback = function() end })
 MainTab:CreateToggle({ Name = "Disparos Rápidos", CurrentValue = false, Callback = function() end })
 MainTab:CreateToggle({ Name = "Dano Personalizado", CurrentValue = false, Callback = function() end })
-MainTab:CreateToggle({ Name = "Aimbot", CurrentValue = false, Callback = function() end })
+MainTab:CreateToggle({ Name = "Aimbot", CurrentValue = false, Callback = toggleAimbot })
 MainTab:CreateToggle({ Name = "God Mode", CurrentValue = false, Callback = function() end })
-MainTab:CreateButton({ Name = "Desbloquear Gamepasses", Callback = unlockGamepasses })
-
--- Aba Research Progress
-local ResearchTab = Window:CreateTab("Research", 4483362458)
-ResearchTab:CreateSlider({
-    Name = "Progresso da Pesquisa",
-    Range = {0, 100},
-    Increment = 5,
-    CurrentValue = 0,
-    Flag = "ResearchProgress",
-    Callback = function(value)
-        researchProgress = value
-        if value >= 100 then
-            Rayfield:Notify({ Title = "Sucesso", Content = "Pesquisa concluída! SCP-354 neutralizado.", Duration = 5 })
-        elseif value >= 80 then
-            Rayfield:Notify({ Title = "Aviso", Content = "Pesquisa em fase final. Aumente a defesa!", Duration = 3 })
-        end
-    end
-})
-
--- Aba Operatives
-local OperativesTab = Window:CreateTab("Operatives", 4483362458)
-local selectedOperative = "Guard"
-OperativesTab:CreateDropdown({
-    Name = "Selecionar Operative",
-    Options = {"Guard", "Scout", "Viper"},
-    CurrentOption = "Guard",
-    Flag = "OperativeSelect",
-    Callback = function(value)
-        selectedOperative = value
-        local op = nil
-        for _, operative in pairs(Database.Operatives) do
-            if operative.Name == value then op = operative break end
-        end
-        if op then Rayfield:Notify({ Title = "Operative", Content = "Selecionado: " .. op.Name .. " (Nível " .. op.LevelReq .. ")", Duration = 3 }) end
-    end
-})
-OperativesTab:CreateInput({
-    Name = "Nível do Operative",
-    PlaceholderText = "Insira nível (0-∞)",
-    RemoveTextAfterFocusLost = false,
-    Callback = function(text)
-        local value = tonumber(text)
-        if value and value >= 0 then
-            Rayfield:Notify({ Title = "Nível", Content = "Nível do " .. selectedOperative .. " definido para " .. value, Duration = 3 })
-        end
-    end
-})
-
--- Aba Inventory
-local InventoryTab = Window:CreateTab("Inventory", 4483362458)
-InventoryTab:CreateDropdown({
-    Name = "Selecionar Arma",
-    Options = {"G18", "AK47", "Railgun"},
-    CurrentOption = "G18",
-    Flag = "WeaponSelect",
-    Callback = function(value)
-        local weapon = nil
-        for _, w in pairs(Database.Weapons) do if w.Name == value then weapon = w break end end
-        if weapon then Rayfield:Notify({ Title = "Arma", Content = "Equipada: " .. weapon.Name .. " (Dano: " .. weapon.Damage .. ")", Duration = 3 }) end
-    end
-})
-InventoryTab:CreateDropdown({
-    Name = "Selecionar Item",
-    Options = {"Poison Cure", "Grenade"},
-    CurrentOption = "Poison Cure",
-    Flag = "ItemSelect",
-    Callback = function(value)
-        local item = nil
-        for _, i in pairs(Database.Items) do if i.Name == value then item = i break end end
-        if item then Rayfield:Notify({ Title = "Item", Content = "Usado: " .. item.Name .. " (" .. item.Effect .. ")", Duration = 3 }) end
-    end
-})
-
--- Aba Buildings
-local BuildingsTab = Window:CreateTab("Buildings", 4483362458)
-BuildingsTab:CreateDropdown({
-    Name = "Construir Edifício",
-    Options = {"Safehouse", "Generator", "Money Printer", "Towers"},
-    CurrentOption = "Safehouse",
-    Flag = "BuildingSelect",
-    Callback = function(value)
-        local building = nil
-        for _, b in pairs(Database.Buildings) do if b.Name == value then building = b break end end
-        if building then Rayfield:Notify({ Title = "Construção", Content = "Construído: " .. building.Name .. " (Custo: " .. building.Cost .. ")", Duration = 3 }) end
-    end
-})
-
--- Aba Gamemodes
-local GamemodeTab = Window:CreateTab("Gamemodes", 4483362458)
-GamemodeTab:CreateDropdown({
-    Name = "Selecionar Gamemode",
-    Options = {"Classic", "UIU Raid"},
-    CurrentOption = "Classic",
-    Flag = "GamemodeSelect",
-    Callback = function(value)
-        local mode = nil
-        for _, g in pairs(Database.Gamemodes) do if g.Name == value then mode = g break end end
-        if mode then Rayfield:Notify({ Title = "Gamemode", Content = mode.Name .. ": " .. mode.Objective, Duration = 3 }) end
-    end
-})
+MainTab:CreateToggle({ Name = "ESP", CurrentValue = false, Callback = toggleESP })
 
 -- Aba Configurações
 local ConfigTab = Window:CreateTab("Configurações", 4483362458)
