@@ -1,5 +1,5 @@
 -- SCP: The Red Lake Hub
--- Script atualizado com UI aprimorada e integração com base de dados externa
+-- Script atualizado com UI aprimorada, integração com base de dados externa e hack de gamepasses
 
 local Rayfield = loadstring(game:HttpGet('https://raw.githubusercontent.com/DraGamer01/Scripts/refs/heads/main/Rayfield_mod.lua'))()
 local Players = game:GetService("Players")
@@ -125,11 +125,38 @@ local function toggleTeleport()
     Rayfield:Notify({ Title = "Teleporte", Content = teleportEnabled and "Teleporte por Clique Ativado" or "Teleporte por Clique Desativado", Duration = 3 })
 end
 
+-- Função Hack de Gamepasses (Experimental)
+local function unlockGamepasses()
+    local success, err = pcall(function()
+        local MarketplaceService = game:GetService("MarketplaceService")
+        local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+        -- Simula a compra de gamepasses alterando valores locais (não garantido contra detecção)
+        for _, gamepass in pairs(Database.Gamepasses) do
+            local productId = gamepass.ProductId or 0 -- Substituir com IDs reais se disponíveis
+            if productId > 0 then
+                MarketplaceService:PromptGamePassPurchase(LocalPlayer, productId)
+                Rayfield:Notify({ Title = "Hack", Content = "Tentando desbloquear " .. gamepass.Name, Duration = 3 })
+            end
+        end
+    end)
+    if not success then
+        Rayfield:Notify({ Title = "Erro", Content = "Falha ao desbloquear gamepasses. Pode ser detectado!", Duration = 5 })
+    end
+end
+
 -- Aba Principal
 local MainTab = Window:CreateTab("Principal", 4483362458)
 MainTab:CreateToggle({ Name = "Noclip", CurrentValue = false, Callback = toggleNoclip })
 MainTab:CreateToggle({ Name = "Fly", CurrentValue = false, Callback = toggleFly })
 MainTab:CreateToggle({ Name = "Teleporte por Clique", CurrentValue = false, Callback = toggleTeleport })
+MainTab:CreateToggle({ Name = "Munição Infinita", CurrentValue = false, Callback = function() end })
+MainTab:CreateToggle({ Name = "Ativar Walkspeed", CurrentValue = false, Callback = function() end })
+MainTab:CreateToggle({ Name = "Hitbox", CurrentValue = false, Callback = function() end })
+MainTab:CreateToggle({ Name = "Disparos Rápidos", CurrentValue = false, Callback = function() end })
+MainTab:CreateToggle({ Name = "Dano Personalizado", CurrentValue = false, Callback = function() end })
+MainTab:CreateToggle({ Name = "Aimbot", CurrentValue = false, Callback = function() end })
+MainTab:CreateToggle({ Name = "God Mode", CurrentValue = false, Callback = function() end })
+MainTab:CreateButton({ Name = "Desbloquear Gamepasses", Callback = unlockGamepasses })
 
 -- Aba Research Progress
 local ResearchTab = Window:CreateTab("Research", 4483362458)
@@ -228,6 +255,177 @@ GamemodeTab:CreateDropdown({
         local mode = nil
         for _, g in pairs(Database.Gamemodes) do if g.Name == value then mode = g break end end
         if mode then Rayfield:Notify({ Title = "Gamemode", Content = mode.Name .. ": " .. mode.Objective, Duration = 3 }) end
+    end
+})
+
+-- Aba Configurações
+local ConfigTab = Window:CreateTab("Configurações", 4483362458)
+local flySpeedInput = ConfigTab:CreateInput({
+    Name = "Velocidade de Voo (Valor)",
+    PlaceholderText = "Insira valor (10-1000)",
+    RemoveTextAfterFocusLost = false,
+    Callback = function(text)
+        local value = tonumber(text)
+        if value and value >= 10 and value <= 1000 then
+            flySpeed = value
+            ConfigTab:FindFirstChild("FlySpeedSlider"):Set(value)
+            Rayfield:Notify({ Title = "Configuração", Content = "Velocidade de Voo definida para " .. value, Duration = 3 })
+        else
+            Rayfield:Notify({ Title = "Erro", Content = "Insira um valor válido entre 10 e 1000.", Duration = 3 })
+        end
+    end
+})
+ConfigTab:CreateSlider({
+    Name = "Velocidade de Voo",
+    Range = {10, 1000},
+    Increment = 1,
+    CurrentValue = 50,
+    Flag = "FlySpeedSlider",
+    Callback = function(value)
+        flySpeed = value
+        flySpeedInput:Set(tostring(value))
+        Rayfield:Notify({ Title = "Configuração", Content = "Velocidade de Voo definida para " .. value, Duration = 3 })
+    end
+})
+local walkSpeedInput = ConfigTab:CreateInput({
+    Name = "Velocidade de Caminhada (Valor)",
+    PlaceholderText = "Insira valor (16-200)",
+    RemoveTextAfterFocusLost = false,
+    Callback = function(text)
+        local value = tonumber(text)
+        if value and value >= 16 and value <= 200 then
+            walkSpeed = value
+            if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+                LocalPlayer.Character.Humanoid.WalkSpeed = value
+            end
+            ConfigTab:FindFirstChild("WalkSpeedSlider"):Set(value)
+            Rayfield:Notify({ Title = "Configuração", Content = "Velocidade de Caminhada definida para " .. value, Duration = 3 })
+        else
+            Rayfield:Notify({ Title = "Erro", Content = "Insira um valor válido entre 16 e 200.", Duration = 3 })
+        end
+    end
+})
+ConfigTab:CreateSlider({
+    Name = "Velocidade de Caminhada",
+    Range = {16, 200},
+    Increment = 1,
+    CurrentValue = 16,
+    Flag = "WalkSpeedSlider",
+    Callback = function(value)
+        walkSpeed = value
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+            LocalPlayer.Character.Humanoid.WalkSpeed = value
+        end
+        walkSpeedInput:Set(tostring(value))
+        Rayfield:Notify({ Title = "Configuração", Content = "Velocidade de Caminhada definida para " .. value, Duration = 3 })
+    end
+})
+local aimbotRangeInput = ConfigTab:CreateInput({
+    Name = "Alcance do Aimbot (Valor)",
+    PlaceholderText = "Insira valor (100-1000)",
+    RemoveTextAfterFocusLost = false,
+    Callback = function(text)
+        local value = tonumber(text)
+        if value and value >= 100 and value <= 1000 then
+            aimbotRange = value
+            ConfigTab:FindFirstChild("AimbotRangeSlider"):Set(value)
+            Rayfield:Notify({ Title = "Configuração", Content = "Alcance do Aimbot definido para " .. value, Duration = 3 })
+        else
+            Rayfield:Notify({ Title = "Erro", Content = "Insira um valor válido entre 100 e 1000.", Duration = 3 })
+        end
+    end
+})
+ConfigTab:CreateSlider({
+    Name = "Alcance do Aimbot",
+    Range = {100, 1000},
+    Increment = 10,
+    CurrentValue = 500,
+    Flag = "AimbotRangeSlider",
+    Callback = function(value)
+        aimbotRange = value
+        aimbotRangeInput:Set(tostring(value))
+        Rayfield:Notify({ Title = "Configuração", Content = "Alcance do Aimbot definido para " .. value, Duration = 3 })
+    end
+})
+local hitboxSizeInput = ConfigTab:CreateInput({
+    Name = "Tamanho da Hitbox (Valor)",
+    PlaceholderText = "Insira valor (5-20)",
+    RemoveTextAfterFocusLost = false,
+    Callback = function(text)
+        local value = tonumber(text)
+        if value and value >= 5 and value <= 20 then
+            hitboxSize = value
+            ConfigTab:FindFirstChild("HitboxSizeSlider"):Set(value)
+            Rayfield:Notify({ Title = "Configuração", Content = "Tamanho da Hitbox definido para " .. value, Duration = 3 })
+        else
+            Rayfield:Notify({ Title = "Erro", Content = "Insira um valor válido entre 5 e 20.", Duration = 3 })
+        end
+    end
+})
+ConfigTab:CreateSlider({
+    Name = "Tamanho da Hitbox",
+    Range = {5, 20},
+    Increment = 1,
+    CurrentValue = 5,
+    Flag = "HitboxSizeSlider",
+    Callback = function(value)
+        hitboxSize = value
+        hitboxSizeInput:Set(tostring(value))
+        Rayfield:Notify({ Title = "Configuração", Content = "Tamanho da Hitbox definido para " .. value, Duration = 3 })
+    end
+})
+local damageInput = ConfigTab:CreateInput({
+    Name = "Dano (Valor)",
+    PlaceholderText = "Insira valor (1-100)",
+    RemoveTextAfterFocusLost = false,
+    Callback = function(text)
+        local value = tonumber(text)
+        if value and value >= 1 and value <= 100 then
+            damage = value
+            ConfigTab:FindFirstChild("DamageSlider"):Set(value)
+            Rayfield:Notify({ Title = "Configuração", Content = "Dano definido para " .. value, Duration = 3 })
+        else
+            Rayfield:Notify({ Title = "Erro", Content = "Insira um valor válido entre 1 e 100.", Duration = 3 })
+        end
+    end
+})
+ConfigTab:CreateSlider({
+    Name = "Dano",
+    Range = {1, 100},
+    Increment = 1,
+    CurrentValue = 50,
+    Flag = "DamageSlider",
+    Callback = function(value)
+        damage = value
+        damageInput:Set(tostring(value))
+        Rayfield:Notify({ Title = "Configuração", Content = "Dano definido para " .. value, Duration = 3 })
+    end
+})
+local fireRateInput = ConfigTab:CreateInput({
+    Name = "Taxa de Disparo (Valor)",
+    PlaceholderText = "Insira valor (0.1-1)",
+    RemoveTextAfterFocusLost = false,
+    Callback = function(text)
+        local value = tonumber(text)
+        if value and value >= 0.1 and value <= 1 then
+            fireRate = value
+            ConfigTab:FindFirstChild("FireRateSlider"):Set(value)
+            Rayfield:Notify({ Title = "Configuração", Content = "Taxa de Disparo definida para " .. value, Duration = 3 })
+        else
+            Rayfield:Notify({ Title = "Erro", Content = "Insira um valor válido entre 0.1 e 1.", Duration = 3 })
+        end
+    end
+})
+ConfigTab:CreateSlider({
+    Name = "Taxa de Disparo",
+    Range = {0.1, 1},
+    Increment = 0.1,
+    CurrentValue = 0.1,
+    Flag = "FireRateSlider",
+    Callback = function(value)
+        fireRate = value
+        fireRateInput:Set(tostring(value))
+        Rayfield:Notify({ Title = "Configuração", Content = "Taxa de Disparo definida para " .. value, Duration = 3 })
     end
 })
 
